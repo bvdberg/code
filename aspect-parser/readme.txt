@@ -20,4 +20,5 @@ TODO:
 - check file (start/end tag)
 - parse file
 - variable escape codes 
-
+- warning for nested tags of same type
+- warning for incorrect types, even if !copyInput

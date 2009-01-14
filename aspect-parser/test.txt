@@ -1,6 +1,9 @@
 outsideA
 %%begin A
 insideA
+%%begin B
+insideB
 %%end B
 %%end A
 outsideA
+
