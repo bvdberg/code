@@ -1,0 +1,9 @@
+A marker placed in code provides a hook to call a function (probe) that you can
+provide at runtime. A marker can be "on" (a probe is connected to it) or "off"
+(no probe is attached). When a marker is "off" it has no effect, except for
+adding a tiny time penalty (checking a condition for a branch) and space
+penalty (adding a few bytes for the function call at the end of the
+instrumented function and adds a data structure in a separate section).  When a
+marker is "on", the function you provide is called each time the marker is
+executed, in the execution context of the caller. When the function provided
+ends its execution, it returns to the caller (continuing from the marker site).
