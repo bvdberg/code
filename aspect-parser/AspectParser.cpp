@@ -3,6 +3,9 @@
 #include <string.h>
 #include <iostream>
 #include <stdarg.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include "AspectParser.h"
 
@@ -33,31 +36,51 @@ void AspectParser::addAspect(const std::string& aspect) {
 }
 
 
-void AspectParser::parse(const char* filename) {
-    copyInput = true;
-    FILE* file = fopen(filename, "r");
-    if (file == 0) throw AspectParserException("error opening file");
+void AspectParser::parseFile(const char* filename) {
+    int fd = open(filename, O_RDONLY);
+    if (fd== -1) throw AspectParserException("error opening file");
 
-    char* buffer = 0;
-    size_t bufsize = 0;
+    struct stat buf;
+    int result = fstat(fd, &buf);
+    if (result == -1) throw AspectParserException("error statting file");
+    int size =  buf.st_size;
+    int prot = PROT_READ | PROT_WRITE;
+    int flags = MAP_PRIVATE;
+    void* map = mmap(NULL, size, prot, flags, fd, 0);
+    if (map == (void*)-1) {
+        throw AspectParserException("error creating map");
+    }
+    close(fd);
+
+    parse((char*)map, size); 
+    munmap(map, size);
+}
+
+
+void AspectParser::parse(char* start, unsigned int size) {
+    copyInput = true;
+    line = 0;
 
     std::stringstream outputBuffer;
 
-    while (true) {
-        ssize_t size = getline(&buffer, &bufsize, file);
-        if (size == -1) break;
-        if (buffer[size-2] == CR) buffer[size-2] = 0;
-        if (buffer[size-1] == LF) buffer[size-1] = 0;
-        readLine(&buffer[0], outputBuffer);
-        ++line;
+    char* end = start + size;
+    char* input = start;
+    char* lineStart = input;
+    while (input != end) {
+        if (*input == LF) {
+            *input = 0;
+
+            readLine(lineStart, outputBuffer);
+            line++;
+            lineStart = input+1;
+        }
+        input++;
     }
+
     if (!aspectStack.empty()) {
         string name = aspectStack.top();
         error("missing end of aspect: '" + name + "' at end of file");
     }
-
-    if (buffer) free(buffer);
-    fclose(file);
 
     cout << outputBuffer.str();
 }

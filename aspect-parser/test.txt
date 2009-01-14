@@ -1,0 +1,6 @@
+outsideA
+%%begin A
+insideA
+%%end B
+%%end A
+outsideA

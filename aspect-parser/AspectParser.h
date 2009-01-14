@@ -20,8 +20,9 @@ class AspectParser {
 public:
     AspectParser();
     void addAspect(const std::string& aspect);
-    void parse(const char* filename);
+    void parseFile(const char* filename);
 protected:
+    void parse(char* data, unsigned int size);
     void error(const std::string& msg);
     bool updateState();
     void readLine(char* input, std::stringstream& output);

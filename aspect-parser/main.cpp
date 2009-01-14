@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
 	try {
         AspectParser parser;
         for (int i=2; i<argc; i++) parser.addAspect(string(argv[i]));
-        parser.parse(argv[1]);
+        parser.parseFile(argv[1]);
 	} catch (std::exception& e) {
 		fprintf(stderr, "ERROR: %s\n", e.what());
 	}
