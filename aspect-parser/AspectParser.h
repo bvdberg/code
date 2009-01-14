@@ -16,13 +16,11 @@ private:
 };
 
 
-typedef std::list<std::string> Aspects;
-typedef Aspects::const_iterator AspectsIter;
-
-
 class AspectParser {
 public:
-    AspectParser(const char* filename, const Aspects& aspects_);
+    AspectParser();
+    void addAspect(const std::string& aspect);
+    void parse(const char* filename);
 protected:
     void error(const std::string& msg);
     bool updateState();
@@ -31,7 +29,9 @@ protected:
     typedef std::stack<std::string> Stack;
     Stack aspectStack;
 
-    const Aspects& aspects;
+    typedef std::list<std::string> Aspects;
+    typedef Aspects::const_iterator AspectsIter;
+    Aspects aspects;
 
     unsigned int line;
     bool copyInput;

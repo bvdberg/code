@@ -19,3 +19,5 @@ TODO:
 - list aspects in file
 - check file (start/end tag)
 - parse file
+- variable escape codes 
+

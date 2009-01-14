@@ -22,9 +22,19 @@ static inline char* itoa(unsigned int value) {
 #define LF 10
 #define CR 13
 
-AspectParser::AspectParser(const char* filename, const Aspects& aspects_)
-        : aspects(aspects_), line(1), copyInput(true)
-{
+AspectParser::AspectParser()
+    : line(1), copyInput(true)
+{}
+
+
+void AspectParser::addAspect(const std::string& aspect) {
+    // TODO filter duplicate entries
+    aspects.push_back(aspect);
+}
+
+
+void AspectParser::parse(const char* filename) {
+    copyInput = true;
     FILE* file = fopen(filename, "r");
     if (file == 0) throw AspectParserException("error opening file");
 
