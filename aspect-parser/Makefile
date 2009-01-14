@@ -1,8 +1,8 @@
 all:
 		@g++ -c AspectParser.cpp -Wall -Wextra
-		@g++ parser.cpp AspectParser.o -Wall -Wextra -o aspect
+		@g++ parser.cpp AspectParser.o -Wall -Wextra -o parse
 		@rm *.o
 
 clean:
-		@rm -f *.o aspect
+		@rm -f *.o parse
 
