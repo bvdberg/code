@@ -21,3 +21,4 @@ TODO:
 - variable escape codes 
 - check last byte (0 terminated?, mmap-ed?)
 - improved tag name reading (strip trailing spaces, no spaces in aspectName, etc)
+- mmunmap on exception
