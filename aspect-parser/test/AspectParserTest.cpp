@@ -125,7 +125,7 @@ TEST(AspectParserTest, testMissingBeginTag) {
 }
 
 
-TEST(AspectParserTest, testNestedAspects) {
+TEST(AspectParserTest, testKnownInnerAspect) {
     const char* input =
         "%%begin A\n"
         "%%begin B\n"
@@ -133,6 +133,33 @@ TEST(AspectParserTest, testNestedAspects) {
         "%%end B\n"
         "%%end A\n";
     const char* expected = "";
+    parser.addAspect("B");
+    TEST_INPUT();
+}
+
+
+TEST(AspectParserTest, testUnknownInnerAspect) {
+    const char* input =
+        "%%begin A\n"
+        "%%begin B\n"
+        "ERROR\n"
+        "%%end B\n"
+        "%%end A\n";
+    const char* expected = "";
+    parser.addAspect("A");
+    TEST_INPUT();
+}
+
+
+TEST(AspectParserTest, testNestedKnownAspects) {
+    const char* input =
+        "%%begin A\n"
+        "%%begin B\n"
+        "OK\n"
+        "%%end B\n"
+        "%%end A\n";
+    const char* expected = "OK\n";
+    parser.addAspect("A");
     parser.addAspect("B");
     TEST_INPUT();
 }
