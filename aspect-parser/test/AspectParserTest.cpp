@@ -42,4 +42,42 @@ TEST(AspectParserTest, testSimpleLines) {
     TEST_INPUT();
 }
 
-// TODO lines with only tags
+TEST(AspectParserTest, testOnlyNewlines) {
+    const char* input = "\n\n";
+    const char* expected = "\n\n";
+    TEST_INPUT();
+}
+
+TEST(AspectParserTest, testOnlyAspects) {
+    const char* input =
+        "%%begin A\n"
+        "%%end A\n";
+    const char* expected = "";
+    TEST_INPUT();
+}
+
+TEST(AspectParserTest, testBeginAspectWithoutName) {
+    const char* input = "%%begin \n";
+    const char* expected = "";
+    try {
+        TEST_INPUT();
+        ASSERT_FAIL();
+    } catch (AspectParserException& e) {
+        ASSERT_STR_EQUAL("missing aspect name (line: 1)", e.what());
+    }
+}
+
+TEST(AspectParserTest, testEndAspectWithoutName) {
+    const char* input =
+        "%%begin A\n"
+        "%%end \n";
+    const char* expected = "";
+    try {
+        TEST_INPUT();
+        ASSERT_FAIL();
+    } catch (AspectParserException& e) {
+        ASSERT_STR_EQUAL("missing aspect name (line: 2)", e.what());
+    }
+}
+
+
