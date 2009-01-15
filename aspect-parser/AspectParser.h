@@ -3,7 +3,8 @@
 
 #include <string>
 #include <list>
-#include <stack>
+//#include <stack>
+#include <deque>
 #include <sstream>
 
 class AspectParserException : public std::exception {
@@ -26,8 +27,11 @@ protected:
     void error(const std::string& msg);
     bool updateState();
     void readLine(char* input, std::stringstream& output);
+    void beginAspect(const std::string& name);
+    void endAspect(const std::string& name);
 
-    typedef std::stack<std::string> Stack;
+    typedef std::deque<std::string> Stack;
+    typedef Stack::const_iterator StackConstIter;
     Stack aspectStack;
 
     typedef std::list<std::string> Aspects;

@@ -21,4 +21,10 @@ TODO:
 - parse file
 - variable escape codes 
 - warning for nested tags of same type
-- warning for incorrect types, even if !copyInput
+- warning for incorrect types, even if !copyInput (keep tag tree + on/off variable)?
+    -> give warning when: middle part selected but not used (optional?)
+        disabled_tag
+            enabled_tag
+        disabled_tag
+
+- negative tags?

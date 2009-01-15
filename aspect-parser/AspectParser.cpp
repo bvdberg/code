@@ -59,7 +59,7 @@ void AspectParser::parseFile(const char* filename) {
 
 void AspectParser::parse(char* start, unsigned int size) {
     copyInput = true;
-    line = 0;
+    line = 1;
 
     std::stringstream outputBuffer;
 
@@ -78,7 +78,7 @@ void AspectParser::parse(char* start, unsigned int size) {
     }
 
     if (!aspectStack.empty()) {
-        string name = aspectStack.top();
+        string name = aspectStack.front();
         error("missing end of aspect: '" + name + "' at end of file");
     }
 
@@ -94,7 +94,7 @@ void AspectParser::error(const string& msg) {
 bool AspectParser::updateState() {
     if (aspectStack.empty()) return true;
 
-    string currentAspect = aspectStack.top();
+    string currentAspect = aspectStack.front();
     
     AspectsIter iter = aspects.begin();
     while (iter != aspects.end()) {
@@ -105,23 +105,35 @@ bool AspectParser::updateState() {
 }
 
 
+void AspectParser::beginAspect(const std::string& name) {
+    for (StackConstIter iter = aspectStack.begin(); iter != aspectStack.end(); iter++) {
+        if (*iter == name) {
+            error("aspect '" + name + "' already started");
+            break;
+        }
+    }
+    aspectStack.push_front(string(name));
+    copyInput = updateState();
+}
+
+
+void AspectParser::endAspect(const std::string& name) {
+    if (aspectStack.empty()) error("aspect '" + name + "' has missing begin");
+    string top = aspectStack.front();
+    if (top != name) error("aspect '" + name + "' has missing begin");
+        
+    aspectStack.pop_front();
+    copyInput = updateState();
+}
+
+
 void AspectParser::readLine(char* input, stringstream& output) {
     if (copyInput && strncmp("%%begin ", input, 8) == 0) {
         string name(input + 8);
-        if (!aspectStack.empty()) {
-            string top = aspectStack.top();
-            if (top == name) error("aspect '" + name + "' already started");
-        }
-        aspectStack.push(string(name));
-        copyInput = updateState();
+        beginAspect(name);
     } else if (strncmp("%%end ", input, 6) == 0) {
         string name(input + 6);
-        if (aspectStack.empty()) error("aspect '" + name + "' has missing begin");
-        string top = aspectStack.top();
-        if (!copyInput && name != top) return;
-        if (top != name) error("aspect '" + name + "' has missing begin");
-        aspectStack.pop();
-        copyInput = updateState();
+        endAspect(name);
     } else if (copyInput) {
         output << input << '\n';
     }
