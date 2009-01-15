@@ -106,6 +106,7 @@ bool AspectParser::updateState() {
 
 
 void AspectParser::beginAspect(const std::string& name) {
+    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
     for (StackConstIter iter = aspectStack.begin(); iter != aspectStack.end(); iter++) {
         if (*iter == name) {
             error("aspect '" + name + "' already started");
@@ -118,6 +119,7 @@ void AspectParser::beginAspect(const std::string& name) {
 
 
 void AspectParser::endAspect(const std::string& name) {
+    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
     if (aspectStack.empty()) error("aspect '" + name + "' has missing begin");
     string top = aspectStack.front();
     if (top != name) error("aspect '" + name + "' has missing begin");
@@ -128,7 +130,7 @@ void AspectParser::endAspect(const std::string& name) {
 
 
 void AspectParser::readLine(char* input, stringstream& output) {
-    if (copyInput && strncmp("%%begin ", input, 8) == 0) {
+    if (strncmp("%%begin ", input, 8) == 0) {
         string name(input + 8);
         beginAspect(name);
     } else if (strncmp("%%end ", input, 6) == 0) {

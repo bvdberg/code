@@ -1,0 +1,12 @@
+ADD_DEFINITIONS(-Wall -Wextra)
+SET(CMAKE_BUILD_TYPE Release)
+#SET(CMAKE_BUILD_TYPE Debug)
+
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+ADD_EXECUTABLE(testRunner
+  main.cpp
+  AspectParserTest.cpp
+)
+TARGET_LINK_LIBRARIES(testRunner aspectparser)
+

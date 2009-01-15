@@ -1,7 +1,6 @@
 outsideA
 %%begin A
 insideA
-%%end C
 %%begin B
 insideB
 %%end B
