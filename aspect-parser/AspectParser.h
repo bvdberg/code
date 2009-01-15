@@ -29,13 +29,14 @@ private:
     void beginAspect(const std::string& name);
     void endAspect(const std::string& name);
     void error(const std::string& msg);
+    bool hasAspect(const std::string& name) const;
 
     typedef std::deque<std::string> Stack;
     typedef Stack::const_iterator StackConstIter;
     Stack aspectStack;
 
     typedef std::list<std::string> Aspects;
-    typedef Aspects::const_iterator AspectsIter;
+    typedef Aspects::const_iterator AspectsConstIter;
     Aspects aspects;
 
     unsigned int line;

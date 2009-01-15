@@ -31,11 +31,8 @@ AspectParser::AspectParser()
 
 
 void AspectParser::addAspect(const std::string& aspect) {
-    AspectsIter iter = aspects.begin();
-    while (iter != aspects.end()) {
-        if (*iter == aspect) throw AspectParserException(string("duplicate aspect: ") + aspect);
-        ++iter;   
-    }
+    if (hasAspect(aspect)) 
+        throw AspectParserException(string("duplicate aspect: ") + aspect);
     aspects.push_back(aspect);
 }
 
@@ -112,9 +109,14 @@ bool AspectParser::updateState() {
 
     string currentAspect = aspectStack.front();
     
-    AspectsIter iter = aspects.begin();
+    return hasAspect(currentAspect);
+}
+
+
+bool AspectParser::hasAspect(const std::string& name) const {
+    AspectsConstIter iter = aspects.begin();
     while (iter != aspects.end()) {
-        if (*iter == currentAspect) return true;
+        if (*iter == name) return true;
         ++iter;   
     }
     return false;
