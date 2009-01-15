@@ -74,7 +74,7 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
         if (*input == LF) {
             *input = 0;
 
-            readLine(lineStart, output);
+            readLine(lineStart, true, output);
             line++;
             lineStart = input+1;
         }
@@ -82,7 +82,7 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
     }
     if (lineStart != end) {
         *end = 0;
-        readLine(lineStart, output);
+        readLine(lineStart, false, output);
     }
 
     if (!aspectStack.empty()) {
@@ -93,7 +93,7 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
 }
 
 
-void AspectParser::readLine(char* input, stringstream& output) {
+void AspectParser::readLine(char* input, bool hasNewline, stringstream& output) {
     if (strncmp("%%begin ", input, 8) == 0) {
         string name(input + 8);
         beginAspect(name);
@@ -102,7 +102,7 @@ void AspectParser::readLine(char* input, stringstream& output) {
         endAspect(name);
     } else if (copyInput) {
         output << input;
-        // << '\n';
+        if (hasNewline) output << '\n';
     }
 }
 

@@ -24,7 +24,7 @@ public:
     void parseFile(const char* filename);
 private:
     void parse(char* data, unsigned int size, std::stringstream& output);
-    void readLine(char* input, std::stringstream& output);
+    void readLine(char* input, bool hasNewLine, std::stringstream& output);
     bool updateState();
     void beginAspect(const std::string& name);
     void endAspect(const std::string& name);

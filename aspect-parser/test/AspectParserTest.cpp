@@ -30,11 +30,16 @@ TEST(AspectParserTest, testEmptyInput) {
     TEST_INPUT();
 }
 
-
-TEST(AspectParserTest, testOneLine) {
+TEST(AspectParserTest, testOneLineWithoutNewLine) {
     const char* input = "abcd";
     const char* expected = "abcd";
     TEST_INPUT();
 }
 
+TEST(AspectParserTest, testSimpleLines) {
+    const char* input = "abcd\nefgh\n";
+    const char* expected = "abcd\nefgh\n";
+    TEST_INPUT();
+}
 
+// TODO lines with only tags
