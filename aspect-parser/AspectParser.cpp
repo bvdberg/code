@@ -52,16 +52,16 @@ void AspectParser::parseFile(const char* filename) {
     }
     close(fd);
 
-    parse((char*)map, size); 
+    std::stringstream outputBuffer;
+    parse((char*)map, size, outputBuffer); 
+    cout << outputBuffer.str();
     munmap(map, size);
 }
 
 
-void AspectParser::parse(char* start, unsigned int size) {
+void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
     copyInput = true;
     line = 1;
-
-    std::stringstream outputBuffer;
 
     char* end = start + size;
     char* input = start;
@@ -70,7 +70,7 @@ void AspectParser::parse(char* start, unsigned int size) {
         if (*input == LF) {
             *input = 0;
 
-            readLine(lineStart, outputBuffer);
+            readLine(lineStart, output);
             line++;
             lineStart = input+1;
         }
@@ -82,7 +82,6 @@ void AspectParser::parse(char* start, unsigned int size) {
         error("missing end of aspect: '" + name + "' at end of file");
     }
 
-    cout << outputBuffer.str();
 }
 
 

@@ -2,7 +2,7 @@ outsideA
 %%begin A
 insideA
 %%begin B
-insideB
+insideAB
 %%end B
 %%end A
 outsideA

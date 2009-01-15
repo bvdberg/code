@@ -22,8 +22,8 @@ public:
     AspectParser();
     void addAspect(const std::string& aspect);
     void parseFile(const char* filename);
-protected:
-    void parse(char* data, unsigned int size);
+private:
+    void parse(char* data, unsigned int size, std::stringstream& output);
     void error(const std::string& msg);
     bool updateState();
     void readLine(char* input, std::stringstream& output);
