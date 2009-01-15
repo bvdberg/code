@@ -80,4 +80,20 @@ TEST(AspectParserTest, testEndAspectWithoutName) {
     }
 }
 
+TEST(AspectParserTest, testNestedAspects) {
+    const char* input =
+        "%%begin A\n"
+        "%%begin B\n"
+        "ERROR\n"
+        "%%end B\n"
+        "%%end A\n";
+    const char* expected = "";
+    parser.addAspect("B");
+    TEST_INPUT();
+}
+
+
+// TODO same nested tags
+// TODO simple aspect Incude + Exclude
+// TODO no newline after last end tag
 
