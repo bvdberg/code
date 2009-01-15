@@ -31,7 +31,7 @@ AspectParser::AspectParser()
 
 
 void AspectParser::addAspect(const std::string& aspect) {
-    if (hasAspect(aspect)) 
+    if (knownAspect(aspect)) 
         throw AspectParserException(string("duplicate aspect: ") + aspect);
     aspects.push_back(aspect);
 }
@@ -107,13 +107,16 @@ void AspectParser::readLine(char* input, bool hasNewline, stringstream& output) 
 bool AspectParser::updateState() {
     if (aspectStack.empty()) return true;
 
-    string currentAspect = aspectStack.front();
-    
-    return hasAspect(currentAspect);
+    StackConstIter iter = aspectStack.begin();
+    while (iter != aspectStack.end()) {
+        if (!knownAspect(*iter)) return false;
+        iter++;
+    }
+    return true;
 }
 
 
-bool AspectParser::hasAspect(const std::string& name) const {
+bool AspectParser::knownAspect(const std::string& name) const {
     AspectsConstIter iter = aspects.begin();
     while (iter != aspects.end()) {
         if (*iter == name) return true;

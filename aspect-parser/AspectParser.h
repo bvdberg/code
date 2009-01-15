@@ -29,7 +29,7 @@ private:
     void beginAspect(const std::string& name);
     void endAspect(const std::string& name);
     void error(const std::string& msg);
-    bool hasAspect(const std::string& name) const;
+    bool knownAspect(const std::string& name) const;
 
     typedef std::deque<std::string> Stack;
     typedef Stack::const_iterator StackConstIter;
