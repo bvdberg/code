@@ -59,7 +59,7 @@ void AspectParser::parseFile(const char* filename) {
     munmap(map, size);
 }
 
-
+// should be NULL-terminated (0 not in size)
 void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
     copyInput = true;
     line = 1;
@@ -67,6 +67,7 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
     char* end = start + size;
     char* input = start;
     char* lineStart = input;
+
     while (input != end) {
         if (*input == LF) {
             *input = 0;

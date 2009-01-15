@@ -18,14 +18,6 @@ Aspects can be nested and may occur multiple times within a file
 TODO:
 - list aspects in file
 - check file (start/end tag)
-- parse file
 - variable escape codes 
-- warning for nested tags of same type
-- warning for incorrect types, even if !copyInput (keep tag tree + on/off variable)?
-    -> give warning when: middle part selected but not used (optional?)
-        disabled_tag
-            enabled_tag
-        disabled_tag
+- check last byte (0 terminated?, mmap-ed?)
 
-- negative tags?
-- check last byte (0 terminated?)
