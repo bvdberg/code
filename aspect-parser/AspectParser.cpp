@@ -31,7 +31,11 @@ AspectParser::AspectParser()
 
 
 void AspectParser::addAspect(const std::string& aspect) {
-    // TODO filter duplicate entries
+    AspectsIter iter = aspects.begin();
+    while (iter != aspects.end()) {
+        if (*iter == aspect) throw AspectParserException(string("duplicate aspect: ") + aspect);
+        ++iter;   
+    }
     aspects.push_back(aspect);
 }
 
@@ -76,6 +80,10 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
         }
         input++;
     }
+    if (lineStart != end) {
+        *end = 0;
+        readLine(lineStart, output);
+    }
 
     if (!aspectStack.empty()) {
         string name = aspectStack.front();
@@ -85,8 +93,17 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
 }
 
 
-void AspectParser::error(const string& msg) {
-    throw AspectParserException(msg + " (line: " + itoa(line) + ")");
+void AspectParser::readLine(char* input, stringstream& output) {
+    if (strncmp("%%begin ", input, 8) == 0) {
+        string name(input + 8);
+        beginAspect(name);
+    } else if (strncmp("%%end ", input, 6) == 0) {
+        string name(input + 6);
+        endAspect(name);
+    } else if (copyInput) {
+        output << input;
+        // << '\n';
+    }
 }
 
 
@@ -105,7 +122,7 @@ bool AspectParser::updateState() {
 
 
 void AspectParser::beginAspect(const std::string& name) {
-    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
+//    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
     for (StackConstIter iter = aspectStack.begin(); iter != aspectStack.end(); iter++) {
         if (*iter == name) {
             error("aspect '" + name + "' already started");
@@ -118,7 +135,7 @@ void AspectParser::beginAspect(const std::string& name) {
 
 
 void AspectParser::endAspect(const std::string& name) {
-    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
+//    printf("DEBUG: %s(%s)\n", __func__, name.c_str());
     if (aspectStack.empty()) error("aspect '" + name + "' has missing begin");
     string top = aspectStack.front();
     if (top != name) error("aspect '" + name + "' has missing begin");
@@ -128,15 +145,8 @@ void AspectParser::endAspect(const std::string& name) {
 }
 
 
-void AspectParser::readLine(char* input, stringstream& output) {
-    if (strncmp("%%begin ", input, 8) == 0) {
-        string name(input + 8);
-        beginAspect(name);
-    } else if (strncmp("%%end ", input, 6) == 0) {
-        string name(input + 6);
-        endAspect(name);
-    } else if (copyInput) {
-        output << input << '\n';
-    }
+void AspectParser::error(const string& msg) {
+    throw AspectParserException(msg + " (line: " + itoa(line) + ")");
 }
+
 

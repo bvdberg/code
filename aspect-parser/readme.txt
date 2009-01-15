@@ -28,3 +28,4 @@ TODO:
         disabled_tag
 
 - negative tags?
+- check last byte (0 terminated?)

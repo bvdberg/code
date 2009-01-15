@@ -24,11 +24,11 @@ public:
     void parseFile(const char* filename);
 private:
     void parse(char* data, unsigned int size, std::stringstream& output);
-    void error(const std::string& msg);
-    bool updateState();
     void readLine(char* input, std::stringstream& output);
+    bool updateState();
     void beginAspect(const std::string& name);
     void endAspect(const std::string& name);
+    void error(const std::string& msg);
 
     typedef std::deque<std::string> Stack;
     typedef Stack::const_iterator StackConstIter;
