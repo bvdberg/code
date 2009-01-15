@@ -61,6 +61,17 @@ TEST(AspectParserTest, testOnlyAspects) {
 }
 
 
+TEST(AspectParserTest, testMissingLastNewline) {
+    const char* input =
+        "%%begin A\n"
+        "foo\n"
+        "%%end A";
+    const char* expected = "foo\n";
+    parser.addAspect("A");
+    TEST_INPUT();
+}
+
+
 TEST(AspectParserTest, testBeginAspectWithoutName) {
     const char* input = "%%begin \n";
     const char* expected = "";
@@ -83,6 +94,33 @@ TEST(AspectParserTest, testEndAspectWithoutName) {
         ASSERT_FAIL();
     } catch (AspectParserException& e) {
         ASSERT_STR_EQUAL("missing aspect name (line: 2)", e.what());
+    }
+}
+
+
+TEST(AspectParserTest, testMissingTagAtEOF) {
+    const char* input =
+        "%%begin A\n"
+        "foo\n";
+    const char* expected = "foo\n";
+    parser.addAspect("A");
+    try {
+        TEST_INPUT();
+        ASSERT_FAIL();
+    } catch (AspectParserException& e) {
+        ASSERT_STR_EQUAL("missing end tag of aspect 'A' at end of file", e.what());
+    }
+}
+
+
+TEST(AspectParserTest, testMissingBeginTag) {
+    const char* input = "%%end A\n";
+    const char* expected = "";
+    try {
+        TEST_INPUT();
+        ASSERT_FAIL();
+    } catch (AspectParserException& e) {
+        ASSERT_STR_EQUAL("aspect 'A' has missing begin (line: 1)", e.what());
     }
 }
 
@@ -152,7 +190,4 @@ TEST(AspectParserTest, testDifferentAspect) {
     parser.addAspect("B");
     TEST_INPUT();
 }
-
-
-// TODO no newline after last end tag
 

@@ -84,9 +84,8 @@ void AspectParser::parse(char* start, unsigned int size, stringstream& output) {
 
     if (!aspectStack.empty()) {
         string name = aspectStack.front();
-        error("missing end of aspect: '" + name + "' at end of file");
+        throw AspectParserException("missing end tag of aspect '" + name + "' at end of file");
     }
-
 }
 
 
