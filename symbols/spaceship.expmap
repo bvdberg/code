@@ -1,0 +1,12 @@
+{
+    global:
+        extern "C++" {
+            *scifi::SpaceShip;
+            scifi::SpaceShip::SpaceShip*;
+            scifi::SpaceShip::?SpaceShip*;
+            scifi::SpaceShip::stabliseIonFluxers*;
+            scifi::SpaceShip::initiateHyperwarp*
+        };
+    local:
+        *;
+};
