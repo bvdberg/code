@@ -1,4 +1,4 @@
-{
+SPACESHIP_1.0 {
     global:
         extern "C++" {
             *scifi::SpaceShip;

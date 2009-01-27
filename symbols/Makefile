@@ -10,3 +10,7 @@ exported:
 
 show:
 	@nm -g -D -C --defined-only libspaceship.so.1
+
+obj:
+	@objdump -T -C libspaceship.so.1 | grep -v CXX | grep -v GLIB
+
