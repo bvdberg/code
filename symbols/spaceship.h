@@ -1,11 +1,13 @@
 #ifndef SPACESHIP_H 
 #define SPACESHIP_H
 
+//#pragma GCC visibility push(hidden)
+
 #include <string>
 #include <vector>
 
-namespace scifi {
 
+namespace scifi {
 class SpaceShip {
 public:
     SpaceShip(std::string const& name);
@@ -27,6 +29,8 @@ private:
 };
 
 }
+
+//#pragma GCC visibility pop
 
 #endif
 
