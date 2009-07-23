@@ -27,6 +27,8 @@
 
 pthread_mutex_t mutex;
 pthread_cond_t  confirmed;
+static int done = 0;
+static int quit = 0;
 
 void* waiter(void *data) {
     const char* color = ANSI_GREEN;
@@ -34,18 +36,28 @@ void* waiter(void *data) {
 
     pthread_mutex_lock(&mutex);
     PRINT("waiting");
+    done = 0;
 #ifdef WITH_TIMEOUT
-    while (1) {
+    while (!done) {
         struct timespec now;
         clock_gettime(CLOCK_REALTIME, &now);
-        now.tv_sec = now.tv_sec + 1;
+        //now.tv_sec = now.tv_sec + 1;
+        now.tv_nsec = now.tv_nsec + 100000000;
+        if (now.tv_nsec > 1000000000) {
+            now.tv_sec = now.tv_sec + 1;
+            now.tv_nsec = now.tv_nsec - 1000000000;
+        }
+
         int result = pthread_cond_timedwait(&confirmed, &mutex, &now);
         if (result != 0) PRINT("timeout");
         else break;
     }
 #else
-    int result = pthread_cond_wait(&confirmed, &mutex);
-    if (result != 0) printf("result = %d\n", result);
+    while (!done) {
+        int result = pthread_cond_wait(&confirmed, &mutex);
+        if (result != 0) printf("result = %d\n", result);
+    }
+    if (quit) PRINT("aborting...");
 #endif
     PRINT("waiting done");
     pthread_mutex_unlock(&mutex);
@@ -57,17 +69,28 @@ void* unlocker(void *data) {
     const char* color = ANSI_RED;
     PRINT("start");
 
-    sleep(4);
-    PRINT("unlocking");
-    pthread_cond_signal(&confirmed);
-    PRINT("unlocking done");
+    // TEMP
+    for (int i=0; i<40; i++) {
+        usleep(100000);
+        if (quit) {
+            PRINT("aborting");
+            break;
+        } 
+    }
 
+    PRINT("unlocking");
+    pthread_mutex_lock(&mutex);
+    done = 1;
+    pthread_cond_signal(&confirmed);
+    pthread_mutex_unlock(&mutex);
+    PRINT("unlocking done");
     PRINT("finish");
 }
 
 
 void sigtrap(int) {
     printf("Ctrl-C\n");
+    quit = 1;
 }
 
 
