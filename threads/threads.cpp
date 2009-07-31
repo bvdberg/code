@@ -4,6 +4,8 @@
 #include <stdlib.h> //for exit
 #include <assert.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <signal.h>
 #include <sys/time.h>
@@ -45,7 +47,7 @@ void* startThread(void* mover)
 {
     Mover* m = reinterpret_cast<Mover*>(mover);
     assert(m);
-    printf(" thread starting\n");
+    printf(" thread starting pid=%d  self=%ld\n", getpid(), pthread_self());
     m->start();
     printf(" thread finished\n");
     return 0;
@@ -57,7 +59,7 @@ public:
     LeftToRight(Buffer* l, Buffer* r) : Mover(l, r) {}
     void start() {
         printf(ANSI_GREEN"LeftToRight started"ANSI_NORMAL"\n");
-        for(int i=0; i<2000000; i++) {
+        for(int i=0; i<10; i++) {
             printf(ANSI_GREEN"moving L->R (%d)"ANSI_NORMAL"\n", i);
             left->get();
             right->put();
@@ -75,7 +77,7 @@ public:
     RightToLeft(Buffer* l, Buffer* r) : Mover(l, r) {}
     void start() {
         printf(ANSI_RED"RightToLeft started"ANSI_NORMAL"\n");
-        for(int i=0; i<2000000; i++) {
+        for(int i=0; i<10; i++) {
             printf(ANSI_RED"moving R->L (%d)"ANSI_NORMAL"\n", i);
             right->get();
             left->put();
@@ -103,7 +105,11 @@ int main() {
         printf("ERROR; return code from pthread_create() is %d\n", rc);
         exit(1);
     }
-    pthread_create(&threads[0], 0, startThread, (void *)&r2l);
+    rc = pthread_create(&threads[1], 0, startThread, (void *)&r2l);
+    if (rc) {
+        printf("ERROR; return code from pthread_create() is %d\n", rc);
+        exit(1);
+    }
 
     pthread_join(threads[0], 0);
     threads[0] = 0;
