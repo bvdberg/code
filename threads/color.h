@@ -17,7 +17,7 @@
 #define ANSI_BMAGENTA "\033[01;35m"
 #define ANSI_BCYAN "\033[01;36m"
 #define ANSI_WHITE "\033[01;37m"
-#define ANSI_NORMAL "\033[22;37m"
+#define ANSI_NORMAL "\033[22;0m"
 
 #endif
 

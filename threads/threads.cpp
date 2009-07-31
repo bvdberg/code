@@ -13,6 +13,9 @@
 
 #include "color.h"
 
+
+static const int TIMES = 2;
+
 class Buffer {
 public:
     Buffer(int i) : count(i) {}
@@ -47,7 +50,7 @@ void* startThread(void* mover)
 {
     Mover* m = reinterpret_cast<Mover*>(mover);
     assert(m);
-    printf(" thread starting pid=%d  self=%ld\n", getpid(), pthread_self());
+    printf(" thread starting pid=%d  self=%lu\n", getpid(), pthread_self());
     m->start();
     printf(" thread finished\n");
     return 0;
@@ -59,7 +62,7 @@ public:
     LeftToRight(Buffer* l, Buffer* r) : Mover(l, r) {}
     void start() {
         printf(ANSI_GREEN"LeftToRight started"ANSI_NORMAL"\n");
-        for(int i=0; i<10; i++) {
+        for(int i=0; i<TIMES; i++) {
             printf(ANSI_GREEN"moving L->R (%d)"ANSI_NORMAL"\n", i);
             left->get();
             right->put();
@@ -77,7 +80,7 @@ public:
     RightToLeft(Buffer* l, Buffer* r) : Mover(l, r) {}
     void start() {
         printf(ANSI_RED"RightToLeft started"ANSI_NORMAL"\n");
-        for(int i=0; i<10; i++) {
+        for(int i=0; i<TIMES; i++) {
             printf(ANSI_RED"moving R->L (%d)"ANSI_NORMAL"\n", i);
             right->get();
             left->put();
