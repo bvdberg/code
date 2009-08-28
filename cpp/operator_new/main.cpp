@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "ClassA.h"
+#include "ClassB.h"
+
+using namespace Test;
+
 inline void * operator new(size_t size) {
     printf("%s() size=%d\n", __func__, size);
     void *ptr = (void *)malloc(size);
@@ -12,13 +17,6 @@ inline void operator delete(void *p) {
     free(p);
 };
 
-class ClassA {
-public:
-    ClassA () {}
-    ~ClassA() {}
-private:
-    char array[100];
-};
 
 int main(int argc, const char *argv[])
 {
@@ -26,4 +24,5 @@ int main(int argc, const char *argv[])
     delete a;
     return 0;
 }
+
 
