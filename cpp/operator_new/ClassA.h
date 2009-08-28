@@ -8,7 +8,7 @@ class ClassB;
 class ClassA {
 public:
     ClassA();
-    virtual ~ClassA();
+    ~ClassA();
 private:
     char array[100];
     ClassB* b;

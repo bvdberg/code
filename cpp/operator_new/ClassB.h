@@ -6,7 +6,7 @@ namespace Test {
 class ClassB {
 public:
     ClassB();
-    virtual ~ClassB();
+    ~ClassB();
 private:
     char array[30];
     ClassB(const ClassB&);
