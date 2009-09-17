@@ -10,6 +10,7 @@ int total = 0;
 
 // add int with size before pointer
 inline void * operator new(size_t size) {
+    printf("%s()\n", __func__);
     int* ptr = (int*)malloc(size+sizeof(int));
     *ptr = size;
     total += size;
@@ -30,12 +31,10 @@ void printMem() {
 
 int main(int argc, const char *argv[])
 {
+    ClassA aa;
     ClassA* a = new ClassA(); 
     printMem();
-    ClassB* b = new ClassB();
-    printMem();
 
-    delete b;
     delete a;
     printMem();
     return 0;
