@@ -6,6 +6,9 @@ using namespace std;
 
 class Container {
 public:
+    Container() {
+        printf("size of deque=%d\n", sizeof(numbers));
+    }
     void add(int value) {
         numbers.push_back(value);
         printf("adding %d size=%d\n", value, numbers.size());
