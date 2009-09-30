@@ -8,12 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 
+static struct sockaddr_in sin;
 
-int main(int argc, const char *argv[])
-{
-    struct sockaddr_in sin;
+int open_socket(int port) {
     sin.sin_family = AF_INET;
-    sin.sin_port = htons (6666);
+    sin.sin_port = htons (port);
     sin.sin_addr.s_addr = INADDR_ANY;
     memset(&(sin.sin_zero), '\0', 8);
 
@@ -41,6 +40,17 @@ int main(int argc, const char *argv[])
         printf("error listening on socket\n");
         return -1;
     }
+
+    return fd;
+}
+
+
+int main(int argc, const char *argv[])
+{
+    int fd = open_socket(6666);
+    if (fd == -1) return 0;
+
+    close(fd);
 
     return 0;
 }
