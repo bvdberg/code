@@ -5,32 +5,20 @@
 #include <time.h>
 #include <signal.h>
 
-#define ANSI_BLACK "\033[22;30m"
 #define ANSI_RED "\033[22;31m"
 #define ANSI_GREEN "\033[22;32m"
-#define ANSI_BROWN "\033[22;33m"
-#define ANSI_BLUE "\033[22;34m"
-#define ANSI_MAGENTA "\033[22;35m"
-#define ANSI_CYAN "\033[22;36m"
-#define ANSI_GREY "\033[22;37m"
-#define ANSI_DARKGREY "\033[01;30m"
-#define ANSI_BRED "\033[01;31m"
-#define ANSI_BGREEN "\033[01;32m"
-#define ANSI_YELLOW "\033[01;33m"
-#define ANSI_BBLUE "\033[01;34m"
-#define ANSI_BMAGENTA "\033[01;35m"
-#define ANSI_BCYAN "\033[01;36m"
-#define ANSI_WHITE "\033[01;37m"
 #define ANSI_NORMAL "\033[22;37m"
 
 #define PRINT(a) printf("%s%s "a ANSI_NORMAL"\n", color, __func__)
 
-pthread_mutex_t mutex;
-pthread_cond_t  confirmed;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  confirmed = PTHREAD_COND_INITIALIZER;
 static int done = 0;
 static int quit = 0;
 
-void* waiter(void *data) {
+#define ETIMEDOUT 110
+
+void* waiter(void *) {
     const char* color = ANSI_GREEN;
     PRINT("start");
 
@@ -63,11 +51,15 @@ void* waiter(void *data) {
     pthread_mutex_unlock(&mutex);
 
     PRINT("finish");
+    pthread_exit(0);
 }
 
-void* unlocker(void *data) {
+void* unlocker(void *) {
     const char* color = ANSI_RED;
     PRINT("start");
+    
+    PRINT("sleeping 3 secons");
+    sleep(3);
 
     // TEMP
     for (int i=0; i<40; i++) {
@@ -85,6 +77,7 @@ void* unlocker(void *data) {
     pthread_mutex_unlock(&mutex);
     PRINT("unlocking done");
     PRINT("finish");
+    pthread_exit(0);
 }
 
 
@@ -97,9 +90,6 @@ void sigtrap(int) {
 int main() {
     pthread_t threads[2];
 
-    pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&confirmed, NULL);
-    
     signal(SIGINT, sigtrap);
 
     pthread_create(&threads[0], 0, waiter, (void *)0);
@@ -110,7 +100,6 @@ int main() {
 
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&confirmed);
-
 
     return 0;
 }
