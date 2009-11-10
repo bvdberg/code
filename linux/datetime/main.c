@@ -2,7 +2,8 @@
 #include <time.h>
 #include <string.h>
 #include <sys/time.h>
-
+#include <time.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 
@@ -14,6 +15,21 @@ const char* getTime() {
     sprintf(buffer, "%02d:%02d:%02d", now2->tm_hour, now2->tm_min, now2->tm_sec);
     return buffer;
 }
+
+
+void time1() {
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    printf("gettimeofday  = %ld.%03ld\n", now.tv_sec, now.tv_usec/1000);
+}
+/*
+void time2() {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    //clock_gettime(CLOCK_REALTIME, &now);
+    printf("clock_gettime = %ld.%03ld\n", now.tv_sec, now.tv_nsec/1000000);
+}
+*/
 
 int main() {
     time_t now = time(0);
