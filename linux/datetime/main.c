@@ -17,20 +17,6 @@ const char* getTime() {
 }
 
 
-void time1() {
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    printf("gettimeofday  = %ld.%03ld\n", now.tv_sec, now.tv_usec/1000);
-}
-/*
-void time2() {
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    //clock_gettime(CLOCK_REALTIME, &now);
-    printf("clock_gettime = %ld.%03ld\n", now.tv_sec, now.tv_nsec/1000000);
-}
-*/
-
 int main() {
     time_t now = time(0);
     printf("time(0) = %ld\n", now);
