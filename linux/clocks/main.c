@@ -34,7 +34,22 @@ uint64_t time3() {
     return now64;
 }
 
+void resolutions() {
+    struct timespec res;
+    clock_getres(CLOCK_REALTIME, &res);
+    printf("REALTIME  = %ld.%09lld\n", res.tv_sec, res.tv_nsec);  
+
+    clock_getres(CLOCK_MONOTONIC, &res);
+    printf("MONOTONIC = %ld.%09lld\n", res.tv_sec, res.tv_nsec);  
+
+    clock_getres(CLOCK_PROCESS_CPUTIME_ID, &res);
+    printf("PROCESS_CPUTIME_ID = %ld.%09lld\n", res.tv_sec, res.tv_nsec);  
+}
+
+
 int main() {
+    resolutions();
+
     uint64_t t1 = time1();
     uint64_t t2 = time2();
     uint64_t diff = t1 - t2;
