@@ -3,6 +3,17 @@
 
 using namespace std;
 
+class ChildA;
+class ChildB;
+
+class Handler {
+public:
+    static void handle(ChildA& left, ChildA& right);
+    static void handle(ChildA& left, ChildB& right);
+    static void handle(ChildB& left, ChildA& right);
+    static void handle(ChildB& left, ChildB& right);
+};
+
 class Interface {
 public:
     Interface(const std::string& name_) : name(name_) {}
