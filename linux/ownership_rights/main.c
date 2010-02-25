@@ -79,7 +79,7 @@ int main(int argc, const char *argv[])
     }
     const char* filename = argv[1];
     struct stat statbuf;
-    int err = stat(filename, &statbuf);
+    int err = lstat(filename, &statbuf);
     if (err) {
         perror("stat");
         return 1;
