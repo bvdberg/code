@@ -52,7 +52,7 @@ static void printStat(const char* filename, struct stat statbuf) {
 
 static void printRights(mode_t mode) {
     mode_t mode2 = mode & (0x3FF);
-    printf("  0x%x  (0x%x)\n", mode, mode2);
+    printf("  0x%x  (0x%x,  Octal: %o)\n", mode, mode2, mode2);
     char buffer[11];
     memset(buffer, '-', sizeof(buffer));
     buffer[sizeof(buffer)-1] = 0;
@@ -68,8 +68,6 @@ static void printRights(mode_t mode) {
     if (S_IWOTH & mode) *cp = 'w'; cp++;
     if (S_IXOTH &mode) *cp = 'x'; cp++;
     printf("rights: %s\n", buffer);
-//    -rw-r--r-- 1 bas bas  file1  644
-//    -rw------- 1 bas bas  file3  600
 }
 
 
