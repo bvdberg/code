@@ -32,7 +32,7 @@ void* worker_thread (void* cookie) {
         gettimeofday(&now, 0);
         now64 = now.tv_sec * 1000000 + now.tv_usec;
         if (count == 0) start64 = now64;
-        printf("%d diff=%llu  absolute error=%lld (us)\n", count, now64 - last64, (now64 - count*PERIOD) - start64);
+        printf("%3d diff=%llu  absolute error=%lld (us)\n", count, now64 - last64, (now64 - count*PERIOD) - start64);
         last64 = now64;
         count++;
     }
