@@ -42,14 +42,38 @@ void* worker_thread (void* cookie) {
 
 int main(void) {
     int fd;
-    pthread_t tid;
-
     fd = open ("/dev/rtc", O_RDONLY);
-    if (fd < 0) perror ("open failed");
-    if (ioctl(fd, RTC_IRQP_SET, FREQ) < 0) perror ("RTC_IRQP_SET ioctl failed");   //4 x per 1000/1024 seconde
-    if (ioctl(fd, RTC_PIE_ON, 0) < 0) perror ("RTC_PIE_ON ioctl failed");
+    if (fd < 0) {
+        perror ("open failed");
+        return -1;
+    }
+
+    printf("RTC_IRQP_READ\n");
+    unsigned long freq = 0;
+    if (ioctl(fd, RTC_IRQP_READ, &freq) < 0) {
+        perror ("RTC_IRQP_READ ioctl failed");   //4 x per 1000/1024 seconde
+        return -1;
+    }
+    printf("RTC_IRQP_READ freq=%lu\n", freq);
+    sleep(1);
+
+
+    printf("RTC_IRQP_SET\n");
+    if (ioctl(fd, RTC_IRQP_SET, FREQ) < 0) {
+        perror ("RTC_IRQP_SET ioctl failed");   //4 x per 1000/1024 seconde
+        return -1;
+    }
+    sleep(1);
+    /*
+    printf("RTC_PIE_ON\n");
+    if (ioctl(fd, RTC_PIE_ON, 0) < 0) {
+        perror ("RTC_PIE_ON ioctl failed");
+        return -1;
+    }
 
     running = 1;
+    pthread_t tid;
+
     pthread_create (&tid, 0, worker_thread, (void*)&fd);
     sleep (15);
     running = 0;
@@ -57,6 +81,7 @@ int main(void) {
     pthread_join (tid, 0);
 
     ioctl(fd, RTC_PIE_OFF, 0);
+    */
     close (fd);
     return 0;
 }
