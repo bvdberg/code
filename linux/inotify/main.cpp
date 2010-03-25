@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
 
     printf("watching %s\n", argv[1]);
     int wd = inotify_add_watch(fd, argv[1], IN_CREATE | IN_DELETE);
+    printf("wd = %d\n", wd);
 
     const int buf_len = 10*sizeof(inotify_event);
     char* buf = (char*)malloc(buf_len);
@@ -50,9 +51,12 @@ int main(int argc, char* argv[]) {
     printf("len = %d (%d events)\n", len, eventCount);
 
     struct inotify_event* event = (struct inotify_event*) buf;
-    printf("wd=%d, mask=%u (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
-    if (event->len > 0) printf("%s", &event->name);
-    printf("]\n");
+    for (int i=0; i<eventCount; i++) {
+        printf("wd=%d, mask=%u (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
+        if (event->len > 0) printf("%s", &event->name[0]);
+        printf("]\n");
+        event++;
+    }
 
     free(buf);
 
