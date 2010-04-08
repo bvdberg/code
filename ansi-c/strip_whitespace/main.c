@@ -41,8 +41,13 @@ static void checkLine(int lineNr, const char* line, const char* end, int output)
     memcpy(buffer, line, size);
     buffer[size] = 0;
 
-    char* cp = buffer+size-1;   // TODO strip off CR/LF
-    // CP = last normal char of buffer if empty/whitespace line
+    char* cp = buffer+size-1;
+    // strip off LF/CR
+    while (cp != buffer) {
+      if (*cp != CR && *cp != LF) break;
+      cp--;
+    }
+    // strip off whitespace
     while (cp != buffer) {
         if (*cp != TAB && *cp != SPACE) break;
         cp--;
@@ -75,6 +80,7 @@ static void parseFile(const char* file, unsigned int size, int output)
         }
         cp++;
     }
+    if (line != file+size) checkLine(lineNr, line, cp, output);
 }
 
 
