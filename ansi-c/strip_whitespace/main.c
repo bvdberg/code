@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/mman.h>
-  
+
 /*
  *  strip whitespace from file:
  *  + print lines
@@ -34,8 +34,8 @@ static void checkLine(int lineNr, char* line, char* end)
         //printf("empty line: [%d]\n", lineNr);
         return;
     }
-    char* cp = end-1;   
-    while (cp != line) {  
+    char* cp = end-1;
+    while (cp != line) {
         if (*cp != TAB && *cp != SPACE) break;
         cp--;
     }
@@ -48,7 +48,7 @@ static void checkLine(int lineNr, char* line, char* end)
         if (*cp == TAB || *cp == SPACE) {
             memcpy(space, line, size-1);
         } else {
-            memcpy(normal, line, cp+1-line); 
+            memcpy(normal, line, cp+1-line);
             memcpy(space, cp+1, (end-cp)-1);
         }
 //        printf("[%d] normal=[%s]  white=[%s]\n", lineNr, normal, space);
