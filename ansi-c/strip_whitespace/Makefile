@@ -1,2 +1,2 @@
 test: main.c
-	gcc main.c -o test -Wall
+	gcc main.c -o test -Wall -O2
