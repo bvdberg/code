@@ -9,10 +9,10 @@
   
 /*
  *  strip whitespace from file:
+ *  + print lines
+ *  - support both newline chars TEST
  *  - empty lines
  *  - lines ending with spaces + newline
- *  - support both newline chars
- *  - print lines
  */
 
 
@@ -65,8 +65,11 @@ static void parseFile(char* file, unsigned int size)
         if (*cp == LF || *cp == CR) {
             checkLine(lineNr, line, cp);
             lineNr++;
+            if ((cp - file) + 1 <= size) {
+                if (*cp == CR && *(cp+1) == LF) cp++;
+                else if (*cp == LF && *(cp+1) == CR) cp++;
+            }
             line = cp+1;
-            // TODO read next enters
         }
         cp++;
     }
