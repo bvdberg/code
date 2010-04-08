@@ -12,9 +12,10 @@
  *  strip whitespace from file:
  *  + print lines
  *  + support both newline chars
- *  - replace newlines with '\n'
- *  - empty lines
+ *  + replace newlines with '\n'
+ *  + empty lines
  *  - lines ending with spaces + newline
+ *  - wildcards: *.c
  */
 
 
