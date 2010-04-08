@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <assert.h>
 
 /*
  *  strip whitespace from file:
@@ -27,44 +28,43 @@
 #define ANSI_BGRED "\33[0;37;40m"
 #define ANSI_BGGREY "\33[0;37;40m"
 
-static void checkLine(int lineNr, char* line, char* end)
+static void checkLine(int lineNr, const char* line, const char* end, int output)
 {
     int size = end - line;
     if (size == 0) {
-        //printf("empty line: [%d]\n", lineNr);
+        if (output) write(output, "\n", 1);
         return;
     }
-    char* cp = end-1;
-    while (cp != line) {
+    assert(size < 512);
+    char buffer[512];
+    memcpy(buffer, line, size);
+    buffer[size] = 0;
+
+    char* cp = buffer+size-1;   // TODO strip off CR/LF
+    // CP = last normal char of buffer if empty/whitespace line
+    while (cp != buffer) {
         if (*cp != TAB && *cp != SPACE) break;
         cp--;
     }
-    int white = (end-1) - cp;
-    if (white) {
-        char normal[256];
-        char space[256];
-        memset(normal, 0, sizeof(normal));
-        memset(space, 0, sizeof(space));
-        if (*cp == TAB || *cp == SPACE) {
-            memcpy(space, line, size-1);
-        } else {
-            memcpy(normal, line, cp+1-line);
-            memcpy(space, cp+1, (end-cp)-1);
-        }
-//        printf("[%d] normal=[%s]  white=[%s]\n", lineNr, normal, space);
-        printf("[%d] "ANSI_BGGREY"%s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
+    if (*cp == TAB || *cp == SPACE) {
+        // whitespace line
+        if (output) write(output, "\n", 1);
+        return;
     }
+    *(cp+1) = '\n';
+    *(cp+2) = 0;
+    if (output) write(output, buffer, strlen(buffer));
 }
 
  
-static void parseFile(char* file, unsigned int size)
+static void parseFile(const char* file, unsigned int size, int output)
 {
     int lineNr = 1;
-    char* line = file;
-    char* cp = line;
+    const char* line = file;
+    const char* cp = line;
     while (cp - file < size) {
         if (*cp == LF || *cp == CR) {
-            checkLine(lineNr, line, cp);
+            checkLine(lineNr, line, cp, output);
             lineNr++;
             if ((cp - file) + 1 <= size) {
                 if (*cp == CR && *(cp+1) == LF) cp++;
@@ -76,10 +76,11 @@ static void parseFile(char* file, unsigned int size)
     }
 }
 
+
 int main(int argc, const char *argv[])
 {
-    if (argc != 2) {
-        printf("Usage %s [file]\n", argv[0]);
+    if (argc < 2) {
+        printf("Usage %s [file] <output>\n", argv[0]);
         return 0;
     }
     const char* filename = argv[1];
@@ -99,9 +100,21 @@ int main(int argc, const char *argv[])
     void* map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_POPULATE, fd, 0);
     if (map == MAP_FAILED) { perror("mmap"); return 0; }
     close(fd);
-
-    parseFile(map, size);
-
+    
+    int output = 1;
+    if (argc == 3) {
+        if (strcmp(argv[1], argv[2]) == 0) {
+            fprintf(stderr, "input and output file are the same\n");
+            goto out;
+        }
+        output = open(argv[2], O_WRONLY | O_CREAT, 0644);
+        if (output == -1) {
+            perror("open");
+            goto out;
+        }
+    }
+    parseFile(map, size, output);
+out:
     munmap(map, size);
 
     return 0;
