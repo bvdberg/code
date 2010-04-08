@@ -24,6 +24,7 @@
 #define ANSI_BRED "\033[01;31m"
 #define ANSI_NORMAL "\033[0m"
 #define ANSI_BGRED "\33[0;37;40m"
+#define ANSI_BGGREY "\33[0;37;40m"
 
 static void checkLine(int lineNr, char* line, char* end)
 {
@@ -44,7 +45,7 @@ static void checkLine(int lineNr, char* line, char* end)
         memset(normal, 0, sizeof(normal));
         strncpy(normal, line, cp+1-line);        
         strncpy(space, cp+1, end-(cp+1));
-        printf("[%3d] %s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
+        printf("[%3d] "ANSI_BGGREY"%s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
     }
 }
 
@@ -69,6 +70,10 @@ static void parseFile(char* file, unsigned int size)
 
 int main(int argc, const char *argv[])
 {
+    if (argc != 2) {
+        printf("Usage %s [file]\n", argv[0]);
+        return 0;
+    }
     const char* filename = argv[1];
 
     int fd = open(filename, O_RDONLY);
