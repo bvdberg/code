@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/mman.h>
-
+  
 /*
  *  strip whitespace from file:
  *  - empty lines
@@ -43,14 +43,16 @@ static void checkLine(int lineNr, char* line, char* end)
         char normal[256];
         char space[256];
         memset(normal, 0, sizeof(normal));
-        strncpy(normal, line, cp+1-line);        
+        if (line != cp) strncpy(normal, line, cp+1-line);        
         strncpy(space, cp+1, end-(cp+1));
+//        printf("normal=[%s]  white=[%s]\n", normal, space);
         printf("[%3d] "ANSI_BGGREY"%s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
     }
 }
 
-   
-    
+ 
+  
+        
 
 static void parseFile(char* file, unsigned int size)
 {
