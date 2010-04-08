@@ -43,17 +43,19 @@ static void checkLine(int lineNr, char* line, char* end)
         char normal[256];
         char space[256];
         memset(normal, 0, sizeof(normal));
-        if (line != cp) strncpy(normal, line, cp+1-line);        
-        strncpy(space, cp+1, end-(cp+1));
-//        printf("normal=[%s]  white=[%s]\n", normal, space);
-        printf("[%3d] "ANSI_BGGREY"%s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
+        memset(space, 0, sizeof(space));
+        if (*cp == TAB || *cp == SPACE) {
+            memcpy(space, line, size-1);
+        } else {
+            memcpy(normal, line, cp+1-line); 
+            memcpy(space, cp+1, (end-cp)-1);
+        }
+//        printf("[%d] normal=[%s]  white=[%s]\n", lineNr, normal, space);
+        printf("[%d] "ANSI_BGGREY"%s"ANSI_BGRED"%s"ANSI_NORMAL"\n", lineNr, normal, space);
     }
 }
 
  
-  
-        
-
 static void parseFile(char* file, unsigned int size)
 {
     int lineNr = 1;
