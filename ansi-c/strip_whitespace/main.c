@@ -10,7 +10,8 @@
 /*
  *  strip whitespace from file:
  *  + print lines
- *  - support both newline chars TEST
+ *  + support both newline chars
+ *  - replace newlines with '\n'
  *  - empty lines
  *  - lines ending with spaces + newline
  */
