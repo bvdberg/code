@@ -48,6 +48,8 @@ static void checkLine(int lineNr, char* line, char* end)
     }
 }
 
+   
+    
 
 static void parseFile(char* file, unsigned int size)
 {
