@@ -22,7 +22,7 @@ struct child_t {
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
-        printf("Usage: watcher [prog]\n");
+        printf("Usage: %s [prog]\n", argv[0]);
         exit(1);
     }
 
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
             return -1;
         }
     } else {   //parent
-        printf("Started [%s] - pid %d\n", argv[1], child_pid);
+        printf("guard: started [%s] - pid %d\n", argv[1], child_pid);
         child.pid = child_pid;
         strncpy(child.executable, argv[1], 63);
     }
