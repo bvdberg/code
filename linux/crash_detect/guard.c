@@ -47,12 +47,11 @@ int main(int argc, char *argv[])
         //phase 2 - wait until first one terminates
         int status = 0;
         child_pid = waitpid(child_pid, &status, 0);
-        printf("STATUS = %d\n", status);
 
         count++;
         if (WIFEXITED(status) == 0) { //child exits abnormally
             if (child.pid == child_pid) {
-                printf("Watcher: Process [%s] (pid %d) crashed!\n", child.executable, child.pid);
+                printf("guard: process [%s] (pid %d) crashed!\n", child.executable, child.pid);
                 child.pid = 0;
                 //restart after crash
                 child_pid = fork();
@@ -63,14 +62,14 @@ int main(int argc, char *argv[])
                         return -1;
                     }
                 } else {   //parent
-                    printf("Restarted [%s] - pid %d\n", child.executable, child_pid);
+                    printf("guard: restarted [%s] - pid %d\n", child.executable, child_pid);
                     child.pid = child_pid;
                 }
             }
             // else weird
         } else {
             if (child.pid == child_pid) {
-                printf("Process [%s] (pid %d) stopped normally\n", child.executable, child.pid);
+                printf("guard: process [%s] (pid %d) stopped normally\n", child.executable, child.pid);
                 child.pid = 0;
             }
             // else weird
