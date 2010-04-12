@@ -32,10 +32,8 @@ int main(int argc, char *argv[])
     if (child_pid == 0) { //child
         usleep(50000);
         int res = execvp(argv[1], NULL);
-        if (res == -1) {
-            printf("ERROR executing %s\n", argv[1]);
-            return -1;
-        }
+        printf("BLIEP\n");
+        if (res == -1) return -1;
     } else {   //parent
         printf("guard: started [%s] - pid %d\n", argv[1], child_pid);
         child.pid = child_pid;
