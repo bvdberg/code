@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
         child_pid = waitpid(child_pid, &status, 0);
 
         count++;
-        if (WIFEXITED(status) == 0) { //child exits abnormally
+        if (!WIFEXITED(status)) { //child exits abnormally
             if (child.pid == child_pid) {
                 printf("guard: process [%s] (pid %d) crashed!\n", child.executable, child.pid);
                 child.pid = 0;
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
             // else weird
         } else {
             if (child.pid == child_pid) {
-                printf("guard: process [%s] (pid %d) stopped normally\n", child.executable, child.pid);
+                printf("guard: process [%s] (pid %d) stopped normally, returned %d\n", child.executable, child.pid, WEXITSTATUS(status));
                 child.pid = 0;
             }
             // else weird
