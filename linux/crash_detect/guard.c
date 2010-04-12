@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
             // else weird
         } else {
             if (child.pid == child_pid) {
-                printf("guard: process [%s] (pid %d) stopped normally, returned %d\n", child.executable, child.pid, WEXITSTATUS(status));
+                printf("guard: process [%s] (pid %d) stopped normally, returned %d\n", child.executable, child.pid, (char)WEXITSTATUS(status));
                 child.pid = 0;
             }
             // else weird
