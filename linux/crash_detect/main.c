@@ -5,7 +5,7 @@
 int main(int argc, const char *argv[])
 {
     printf("start\n");
-    sleep(2);
+    sleep(10);
     //abort();  // to cause crash
     printf("end\n");
     return 0;

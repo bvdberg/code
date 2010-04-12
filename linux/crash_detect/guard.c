@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
     pid_t child_pid = fork();
     if (child_pid == 0) { //child
         usleep(50000);
-        int res = execvp(argv[1], NULL);
-        printf("BLIEP\n");
-        if (res == -1) return -1;
+        execvp(argv[1], NULL);
+        printf("guard: error starting %s\n", argv[1]);
+        return -1;
     } else {   //parent
         printf("guard: started [%s] - pid %d\n", argv[1], child_pid);
         child.pid = child_pid;
@@ -54,11 +54,9 @@ int main(int argc, char *argv[])
                 //restart after crash
                 child_pid = fork();
                 if (child_pid == 0) { //child
-                    int res = execvp(child.executable, NULL);
-                    if (res == -1) {
-                        printf("ERROR executing %s\n", child.executable);
-                        return -1;
-                    }
+                    execvp(child.executable, NULL);
+                    printf("guard: error starting %s\n", child.executable);
+                    break;
                 } else {   //parent
                     printf("guard: restarted [%s] - pid %d\n", child.executable, child_pid);
                     child.pid = child_pid;
