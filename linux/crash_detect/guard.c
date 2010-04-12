@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         printf("STATUS = %d\n", status);
 
         count++;
-        if ( WIFEXITED(status) == 0 ) { //child exits abnormally
+        if (WIFEXITED(status) == 0) { //child exits abnormally
             if (child.pid == child_pid) {
                 printf("Watcher: Process [%s] (pid %d) crashed!\n", child.executable, child.pid);
                 child.pid = 0;
