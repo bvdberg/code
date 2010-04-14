@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
 static void daemonize()
 {
@@ -19,9 +20,11 @@ static void daemonize()
     close(0);
     close(1);
     close(2);
-    int fd = open("/dev/null", O_RDWR, 0);
-    fd = open("/dev/null", O_RDWR, 0);
-    fd = open("/dev/null", O_RDWR, 0);
+    int fd = 0;
+    while (fd != 2) {
+        fd = open("/dev/null", O_RDWR, 0);
+        if (fd == -1) exit(errno);
+    }
 }
 
 
