@@ -17,6 +17,8 @@ static void daemonize()
         exit(0);
     }
     printf("server [%d]\n", getpid());
+/*
+    // sanitize stdfds
     close(0);
     close(1);
     close(2);
@@ -25,6 +27,7 @@ static void daemonize()
         fd = open("/dev/null", O_RDWR, 0);
         if (fd == -1) exit(errno);
     }
+*/
 }
 
 
@@ -32,7 +35,13 @@ int main(int argc, const char *argv[])
 {
     daemonize();
     printf("server\n");
-    sleep(40);
+
+    int i;
+    int pid = getpid();
+    for (i=0; i<40; i++) {
+        printf("[%d] loop %d\n", pid, i);
+        sleep(1);
+    }
     return 0;
 }
 
