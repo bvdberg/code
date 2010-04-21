@@ -54,8 +54,8 @@ std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_
 
 }
 
-std::string base64_decode(std::string const& encoded_string) {
-    int in_len = encoded_string.size();
+static std::string base64_decode(const char* encoded_string) {
+    int in_len = strlen(encoded_string);
     int i = 0;
     int j = 0;
     int in_ = 0;
@@ -95,12 +95,13 @@ std::string base64_decode(std::string const& encoded_string) {
     return ret;
 }
 
+int main(int argc, const char *argv[])
+{
+    const char* input = "ADP GmbH\nAnalyse Design & Programmierung\nGesellschaft mit beschränkter Haftung";
+    if (argc == 2) input = argv[1];
 
-int main() {
-    const std::string s = "ADP GmbH\nAnalyse Design & Programmierung\nGesellschaft mit beschränkter Haftung";
-
-    std::string encoded = base64_encode(reinterpret_cast<const unsigned char*>(s.c_str()), s.length());
-    std::string decoded = base64_decode(encoded);
+    std::string encoded = base64_encode((unsigned char*)input, strlen(input));
+    std::string decoded = base64_decode(encoded.c_str());
 
     std::cout << "encoded: " << encoded << std::endl;
     std::cout << "decoded: " << decoded << std::endl;
