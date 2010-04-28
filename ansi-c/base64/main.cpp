@@ -97,14 +97,29 @@ static std::string base64_decode(const char* encoded_string) {
 
 int main(int argc, const char *argv[])
 {
-    const char* input = "ADP GmbH\nAnalyse Design & Programmierung\nGesellschaft mit beschränkter Haftung";
-    if (argc == 2) input = argv[1];
+    if (argc != 3) {
+        printf("Usage bas64 [-e|-d] [data]\n");
+        return -1;
+    }
 
-    std::string encoded = base64_encode((unsigned char*)input, strlen(input));
-    std::string decoded = base64_decode(encoded.c_str());
+    const char* input = argv[2];
 
-    std::cout << "encoded: " << encoded << std::endl;
-    std::cout << "decoded: " << decoded << std::endl;
+    if (strcmp(argv[1], "-e") == 0) {
+        printf("encoding\n");
+        std::string encoded = base64_encode((unsigned char*)input, strlen(input));
+        std::string decoded = base64_decode(encoded.c_str());
+
+        std::cout << "encoded: " << encoded << std::endl;
+        std::cout << "decoded: " << decoded << std::endl;
+    } else {
+        printf("decoding\n");
+        std::string decoded = base64_decode(input);
+        std::string encoded = base64_encode((unsigned char*)decoded.c_str(), decoded.length());
+
+        std::cout << "decoded: " << decoded << std::endl;
+        std::cout << "encoded: " << encoded << std::endl;
+
+    }
 
     return 0;
 }
