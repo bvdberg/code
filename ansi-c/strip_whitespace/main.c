@@ -28,6 +28,7 @@
 #define ANSI_BGRED "\33[0;37;40m"
 #define ANSI_BGGREY "\33[0;37;40m"
 
+
 static void checkLine(int lineNr, const char* line, const char* end, int output)
 {
     int size = end - line;
@@ -118,6 +119,21 @@ int main(int argc, const char *argv[])
             perror("open");
             goto out;
         }
+    }
+    if (argc == 2) {
+        char copy[256];
+        sprintf(copy, "%s.orig", filename);
+        int err = rename(filename, copy);
+        if (err) {
+            perror("rename");
+            goto out;
+        }
+        output = open(filename, O_WRONLY | O_CREAT, 0644);
+        if (output == -1) {
+            perror("open");
+            goto out;
+        }
+
     }
     parseFile(map, size, output);
 out:
