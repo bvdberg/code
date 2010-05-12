@@ -10,8 +10,6 @@
 int main(int argc, const char *argv[])
 {
     if (argc != 3) return 1;
-    printf("INPUT=%s\n", argv[1]);
-    printf("OUTPUT=%s\n", argv[2]);
 
     int input = open(argv[1], O_RDONLY);
     if (input == -1) {
