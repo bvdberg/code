@@ -34,6 +34,8 @@ int main(int argc, const char *argv[])
         sprintf(buffer, "0x%02x, ", c);
         write(output, buffer, 6);
     }
+    char end = '\n';
+    write(output, &end, 1);
     close(output);
     close(input);
 

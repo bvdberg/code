@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 PROJECT(Binary-include)
-SET(CMAKE_BUILD_TYPE Release)
-#SET(CMAKE_BUILD_TYPE Debug)
-SET(CMAKE_VERBOSE_MAKEFILE false)
+#SET(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_BUILD_TYPE Debug)
+#SET(CMAKE_VERBOSE_MAKEFILE false)
+#SET(CMAKE_VERBOSE_MAKEFILE true)
 ADD_DEFINITIONS(-Wall -Wextra)
 
 add_executable(MakeTable maketable.c)
