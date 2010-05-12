@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 PROJECT(Binary-include)
+#NOTE: MakeTable crashes with Release build?!?!
 #SET(CMAKE_BUILD_TYPE Release)
-SET(CMAKE_BUILD_TYPE Debug)
+#SET(CMAKE_BUILD_TYPE Debug)
 #SET(CMAKE_VERBOSE_MAKEFILE false)
 #SET(CMAKE_VERBOSE_MAKEFILE true)
 ADD_DEFINITIONS(-Wall -Wextra)
