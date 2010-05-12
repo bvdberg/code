@@ -26,16 +26,17 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    char buffer[10];
     while (1) {
         char c;
         int numread = read(input, &c, 1);
         if (numread == 0) break;    // EOF
-        char buffer[4];
         sprintf(buffer, "0x%02x, ", c);
-        write(output, buffer, 6);
+        write(output, buffer, strlen(buffer));
     }
     char end = '\n';
     write(output, &end, 1);
+
     close(output);
     close(input);
 
