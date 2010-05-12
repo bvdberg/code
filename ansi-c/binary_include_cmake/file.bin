@@ -1,0 +1,20 @@
+name = 'Special Effect1'
+stype = 'mob-effect'
+timeout = 10
+
+local amount = 3
+
+function onHit(dmg)
+    print(name..".on_hit() area="..self.area.."  mob="..self.mob.name.."  dmg="..dmg)
+    local absorbed = 0
+    if (dmg >= amount) then
+        absorbed = amount
+    else
+        absorbed = dmg
+    end
+    amount = amount - absorbed
+    dmg = dmg - absorbed
+    local continue = (amount > 0) 
+    return dmg, continue
+end
+
