@@ -3,6 +3,9 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <unistd.h>
 #include <stdio.h>
 
 int main(void) {
@@ -31,6 +34,27 @@ int main(void) {
     {
         struct ifreq *item = &ifr[i];
         printf("%s -> %s\n", item->ifr_name, inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
+        // show macnr's
+        struct ifreq ifr2;
+        ifr2.ifr_addr.sa_family = AF_INET;
+        strncpy(ifr2.ifr_name, "eth0", IFNAMSIZ-1);
+
+        if (ioctl(sck, SIOCGIFHWADDR, &ifr2) != 0) {
+            perror("ioctl(SIOCGIFHWADDR)");
+            continue;
+        }
+        printf("  %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[0],
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[1],
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[2],
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[3],
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[4],
+         (unsigned char)ifr2.ifr_hwaddr.sa_data[5]);
+
+
+
     }
+
+    close(sck);
     return 0;
 }
