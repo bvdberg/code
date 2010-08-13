@@ -94,10 +94,15 @@ int checkUImage(const void* image, unsigned int len) {
         return -1;
     }
 
-    if (be32_to_cpu(header.ih_size) != len - sizeof(header)) {
+    if (be32_to_cpu(header.ih_size) > len - sizeof(header)) {
         printf("uImage header claims that image has %d bytes\n", be32_to_cpu(header.ih_size));
         printf("we read only %u bytes.\n", len - sizeof(header));
         return -1;
+    }
+
+    int extra_data = len - sizeof(header) - be32_to_cpu(header.ih_size);
+    if (extra_data) {
+        printf("Image has %d bytes extra data\n", extra_data);
     }
 
     crc = crc32(0, (const Bytef*)image + sizeof(header), len - sizeof(header));
