@@ -8,7 +8,6 @@
 #include <byteswap.h>
 
 #include <zlib.h>
-//#define HAVE_LIBZ
 
 #define uint32_t u_int32_t
 #define uint8_t u_int8_t
@@ -72,15 +71,14 @@ int checkUImage(const void* image, unsigned int len) {
         return -1;
     }
 
-#ifdef HAVE_LIBZ
-    int hcrc = be32_to_cpu(header.ih_hcrc);
+    unsigned int hcrc = be32_to_cpu(header.ih_hcrc);
     header.ih_hcrc = 0;
-    int crc = crc32(0, (void *)&header, sizeof(header));
+    unsigned int crc = crc32(0, (const Bytef*)&header, sizeof(header));
     if (crc != hcrc) {
         printf("Header checksum of the uImage does not match\n");
         return -1;
     }
-#endif
+
     if (header.ih_type != IH_TYPE_KERNEL) {
         printf("uImage type %d unsupported\n", header.ih_type);
         return -1;
@@ -102,14 +100,12 @@ int checkUImage(const void* image, unsigned int len) {
         return -1;
     }
 
-#ifdef HAVE_LIBZ
-    crc = crc32(0, (void *)buf + sizeof(header), len - sizeof(header));
+    crc = crc32(0, (const Bytef*)image + sizeof(header), len - sizeof(header));
     if (crc != be32_to_cpu(header.ih_dcrc)) {
         printf("The data CRC does not match. Computed: %08x expected %08x\n", crc,
                 be32_to_cpu(header.ih_dcrc));
         return -1;
     }
-#endif
 
     return 0;
 }
