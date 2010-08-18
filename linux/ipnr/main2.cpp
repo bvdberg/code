@@ -37,7 +37,7 @@ int main(void) {
         // show macnr's
         struct ifreq ifr2;
         ifr2.ifr_addr.sa_family = AF_INET;
-        strncpy(ifr2.ifr_name, "eth0", IFNAMSIZ-1);
+        strncpy(ifr2.ifr_name, item->ifr_name, IFNAMSIZ-1);
 
         if (ioctl(sck, SIOCGIFHWADDR, &ifr2) != 0) {
             perror("ioctl(SIOCGIFHWADDR)");
