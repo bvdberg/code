@@ -7,7 +7,11 @@ extern int h_errno;
 
 int main(int argc, const char *argv[])
 {
-    const char* host = "ids.irexnet.com";
+    if (argc != 2) {
+        printf("Usage: %s [host]\n", argv[0]);
+        return -1;
+    }
+    const char* host = argv[1];
 
     char buf[1024];
     memset(buf, 0, 1024);
@@ -19,10 +23,12 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    printf("host='%s'\n", h.h_name);
+    printf("host = '%s'\n", h.h_name);
     int i;
+    printf("ip = ");
     for (i=0; i<h.h_length; i++) {
-        printf("%d ", (unsigned char)h.h_addr_list[0][i]);
+        if (i!= 0) printf(".");
+        printf("%d", (unsigned char)h.h_addr_list[0][i]);
     }
     printf("\n");
     return 0;
