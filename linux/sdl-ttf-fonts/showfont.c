@@ -24,6 +24,8 @@
 
 /* A simple program to test the text rendering feature of the TTF library */
 
+// run with ./showfont FreeSerif.ttf 20
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
