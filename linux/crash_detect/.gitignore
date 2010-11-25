@@ -1,4 +1,4 @@
 guard
-crash
-normal
+test-normal
+test-crash
 tags

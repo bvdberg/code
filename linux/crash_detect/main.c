@@ -5,8 +5,10 @@
 int main(int argc, const char *argv[])
 {
     printf("start\n");
-    sleep(10);
-    //abort();  // to cause crash
+    sleep(4);
+#ifdef CRASH
+    abort();  // to cause crash
+#endif
     printf("end\n");
     return 0;
 }
