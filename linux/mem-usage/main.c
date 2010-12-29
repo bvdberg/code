@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main() {
 
@@ -10,19 +11,21 @@ int main() {
 
     printf("malloc 1 Mb\n");
     void* mem1 = malloc(1024*1024);
-    sleep(6);
+    memset(mem1, 0, 1024*1024);
+    sleep(10);
 
     printf("malloc 1 Mb\n");
     void* mem2 = malloc(1024*1024);
-    sleep(6);
+    memset(mem2, 0, 1024*1024);
+    sleep(10);
 
     printf("freeing 1 Mb\n");
     free(mem2);
-    sleep(6);
+    sleep(10);
     
     printf("freeing 1 Mb\n");
     free(mem1);
-    sleep(6);
+    sleep(10);
 
     return 0;
 }
