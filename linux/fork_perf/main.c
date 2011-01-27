@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 u_int64_t getNow()
 {
@@ -29,6 +31,11 @@ int main(int argc, const char *argv[])
             // TODO exec ?
             exit(0);
         default:
+            {
+                // wait for last child
+                int status = 0;
+                waitpid(pid, &status, 0);
+            }
             break;
         }
         current++;
