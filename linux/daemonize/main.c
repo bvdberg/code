@@ -16,8 +16,22 @@ static void daemonize()
     default:
         exit(0);
     }
+
+    if (setsid() == -1) {
+        perror("setsid");
+        exit(-1);
+    }
+
+    switch(fork()) {
+    case 0: break;
+    case -1:
+        printf("fork failed\n");
+        exit(-1);
+    default:
+        exit(0);
+    }
     printf("server [%d]\n", getpid());
-/*
+
     // sanitize stdfds
     close(0);
     close(1);
@@ -27,7 +41,6 @@ static void daemonize()
         fd = open("/dev/null", O_RDWR, 0);
         if (fd == -1) exit(errno);
     }
-*/
 }
 
 
