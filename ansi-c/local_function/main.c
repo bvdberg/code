@@ -27,6 +27,12 @@ int main()
 {
     select_function(10);
     select_function(2);
+
+    void test(int a) {
+        printf("%s() a=%d\n", __func__, a);
+    }
+    test(10);
+
     return 0;
 }
 
