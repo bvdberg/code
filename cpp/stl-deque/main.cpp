@@ -21,10 +21,8 @@ public:
             numbers.erase(iter);
         }
     }
-    void print() {
-        for (NumbersIter iter = numbers.begin(); iter != numbers.end(); ++iter) {
-            printf("Contains: %d \n", *iter);
-        }
+    void test() {
+        print();
 
         NumbersIter iter = numbers.begin();
         while (iter != numbers.end()) {
@@ -37,13 +35,25 @@ public:
             }
         }
 
-        for (NumbersIter iter = numbers.begin(); iter != numbers.end(); ++iter) {
-            printf("Contains: %d\n", *iter);
+        print();
+    }
+    void print() const {
+        printf("Deque:\n");
+        for (NumbersConstIter iter = numbers.begin(); iter != numbers.end(); ++iter) {
+            printf("  %d \n", *iter);
+        }
+    }
+    void printRev() const {
+        printf("Deque: (rev)\n");
+        for (NumbersConstRevIter iter = numbers.rbegin(); iter != numbers.rend(); ++iter) {
+            printf("  %d \n", *iter);
         }
     }
 private:
     typedef std::deque<int> Numbers;
     typedef Numbers::iterator NumbersIter;
+    typedef Numbers::const_iterator NumbersConstIter;
+    typedef Numbers::const_reverse_iterator NumbersConstRevIter;
     Numbers numbers;
 };
 
@@ -52,11 +62,13 @@ int main() {
     con.add(5);
     con.add(7);
     con.add(10);
+    con.print();
+    con.printRev();
 
     con.remove(7);
     con.remove(12);
 
-    con.print();
+    con.test();
 
     return 0;
 }
