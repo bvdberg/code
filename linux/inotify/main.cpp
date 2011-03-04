@@ -5,9 +5,16 @@
  */
 
 #include <stdio.h>
+#include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/inotify.h>
+
+int stop = 0;
+
+static void sigint(int) {
+    stop = true;
+}
 
 struct maskname {
     uint32_t mask;
@@ -36,7 +43,7 @@ int main(int argc, char* argv[]) {
         printf("usage %s [dir to watch]\n", argv[0]);
         return 1;
     }
-    printf("sizeof(inotify_event) = %d\n", sizeof(inotify_event));
+    signal(SIGINT, sigint);
 
     int fd = inotify_init();
     printf("fd=%d\n", fd);
@@ -49,25 +56,25 @@ int main(int argc, char* argv[]) {
     }
     printf("wd = %d\n", wd);
 
-    while (1) {
-        const int buf_len = 10*sizeof(inotify_event);
+    while (!stop) {
+        const int buf_len = 1024;
         char* buf = (char*)malloc(buf_len);
 
-        size_t len = read(fd, buf, buf_len);
+        ssize_t len = read(fd, buf, buf_len);
         if (len < 0) {
             perror("read");
             free(buf);
-            continue;
+            break;
         }
         printf("len = %d\n", len);
         struct inotify_event* event = (struct inotify_event*) buf;
-        unsigned int i = 0;
+        int i = 0;
         while (i < len) {
             if (event->wd != wd) {
                 printf("invalid wd: %d\n", event->wd);
                 return -1;
             }
-            printf("wd=%d, mask=%u (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
+            printf("wd=%d, mask=0x%x (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
             if (event->len > 0) printf("%s", &event->name[0]);
             printf("]\n");
             i += (sizeof(inotify_event) + event->len);
@@ -76,6 +83,8 @@ int main(int argc, char* argv[]) {
 
         free(buf);
     }
+    int ret = inotify_rm_watch (fd, wd);
+    if (ret) perror ("inotify_rm_watch");
 
     return 0;
 }
