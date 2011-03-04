@@ -21,12 +21,14 @@ const struct maskname names[] = {
 };
 
 const char* mask2name(uint32_t mask) {
+    static char buffer[20];
     const struct maskname* name = names;
     while (name->mask != 0) {
         if (name->mask == mask) return name->name;
         name++;
     }
-    return "unknown";
+    sprintf(buffer, "unknown: 0x%x", mask);
+    return buffer;
 }
 
 int main(int argc, char* argv[]) {
@@ -41,24 +43,39 @@ int main(int argc, char* argv[]) {
 
     printf("watching %s\n", argv[1]);
     int wd = inotify_add_watch(fd, argv[1], IN_CREATE | IN_DELETE);
+    if (wd == -1) {
+        perror("inotify_add_watch");
+        return -1;
+    }
     printf("wd = %d\n", wd);
 
-    const int buf_len = 10*sizeof(inotify_event);
-    char* buf = (char*)malloc(buf_len);
+    while (1) {
+        const int buf_len = 10*sizeof(inotify_event);
+        char* buf = (char*)malloc(buf_len);
 
-    size_t len = read(fd, buf, buf_len);
-    int eventCount = len /  sizeof(inotify_event);
-    printf("len = %d (%d events)\n", len, eventCount);
+        size_t len = read(fd, buf, buf_len);
+        if (len < 0) {
+            perror("read");
+            free(buf);
+            continue;
+        }
+        printf("len = %d\n", len);
+        struct inotify_event* event = (struct inotify_event*) buf;
+        unsigned int i = 0;
+        while (i < len) {
+            if (event->wd != wd) {
+                printf("invalid wd: %d\n", event->wd);
+                return -1;
+            }
+            printf("wd=%d, mask=%u (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
+            if (event->len > 0) printf("%s", &event->name[0]);
+            printf("]\n");
+            i += (sizeof(inotify_event) + event->len);
+            event++;
+        }
 
-    struct inotify_event* event = (struct inotify_event*) buf;
-    for (int i=0; i<eventCount; i++) {
-        printf("wd=%d, mask=%u (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
-        if (event->len > 0) printf("%s", &event->name[0]);
-        printf("]\n");
-        event++;
+        free(buf);
     }
-
-    free(buf);
 
     return 0;
 }
