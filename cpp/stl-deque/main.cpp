@@ -13,6 +13,16 @@ public:
         numbers.push_back(value);
         printf("adding %d size=%d\n", value, numbers.size());
     }
+    void addOrdered(int value) {
+        NumbersIter iter = numbers.begin();
+        while (iter != numbers.end()) {
+            int num = *iter;
+            if (num > value) break;
+            ++iter;
+        }
+        numbers.insert(iter, value);
+        printf("adding ordered %d size=%d\n", value, numbers.size());
+    }
     void remove(int value) {
         NumbersIter iter = find(numbers.begin(), numbers.end(), value);
         if (iter == numbers.end()) {
@@ -69,6 +79,15 @@ int main() {
     con.remove(12);
 
     con.test();
+
+    Container con2;
+    con2.addOrdered(7);
+    con2.addOrdered(1);
+    con2.addOrdered(9);
+    con2.addOrdered(8);
+    con2.addOrdered(4);
+    con2.addOrdered(2);
+    con2.print();
 
     return 0;
 }
