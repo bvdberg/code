@@ -28,10 +28,10 @@ int main()
     cmd_tbl_t* cmd;
     printf("%p\n", &__boot_cmd_start);
     printf("%p\n", &__boot_cmd_end);
-    printf("%s\n", __boot_cmd_start);
+    printf("%s\n", (char*)&__boot_cmd_start);
 
     for (cmd = &__boot_cmd_start; cmd != &__boot_cmd_end; cmd++) {
-        printf("cmd = %p\n", cmd);
+        printf("cmd = %p  name=%s\n", cmd, cmd->name);
     }
     return 0;
 }
