@@ -1,5 +1,6 @@
 // print hex value manually (for embedded targets)
 #include <stdio.h>
+#include <stdlib.h>
 
 void uart_putc(char c)
 {
@@ -20,7 +21,7 @@ void printHex(unsigned int value)
 
 int main(int argc, const char *argv[])
 {
-    int num = 123456;
+    int num = atoi(argv[1]);
     printHex(num);    
     printf("\n");
     fflush(stdout);
