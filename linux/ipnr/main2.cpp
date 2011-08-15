@@ -33,13 +33,14 @@ int main(void) {
     for(int i = 0; i < nInterfaces; i++)
     {
         struct ifreq *item = &ifr[i];
-        printf("%s -> %s\n", item->ifr_name, inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
+        printf("%6s -> %12s\t", item->ifr_name, inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
         // show macnr's
         struct ifreq ifr2;
         ifr2.ifr_addr.sa_family = AF_INET;
         strncpy(ifr2.ifr_name, item->ifr_name, IFNAMSIZ-1);
 
         if (ioctl(sck, SIOCGIFHWADDR, &ifr2) != 0) {
+            printf("\n");
             perror("ioctl(SIOCGIFHWADDR)");
             continue;
         }
