@@ -1,2 +1,2 @@
-show: main.cpp
-	g++ main.cpp -o show
+show: main.c
+	g++ -Wall main.c -o show
