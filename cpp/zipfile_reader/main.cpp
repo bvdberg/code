@@ -44,9 +44,10 @@ int main(int argc, const char *argv[])
     const char* innerFile = "";
     if (argc == 3) innerFile = argv[2];
 
-    ZZIP_DIR* dir = zzip_opendir(argv[1]);
+    zzip_error_t errcode;
+    ZZIP_DIR* dir = zzip_dir_open(argv[1], &errcode);
     if (dir == NULL) {
-        fprintf(stderr, "zzip_operdir failed: TODO (errno?)\n");
+        fprintf(stderr, "zzip_operdir failed: %s\n", zzip_strerror(errcode));
         return -1;
     }
 
