@@ -1,20 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-
-/*
-    Possible libs:
-        libzipios
-        libzzip <- lightweight
-        libzip (also creation, modification)
-        libarchive (also creation, other formats)
-        libghc6-zip-archive
-*/
-
-#define LIBZZIP
-
-#ifdef LIBZZIP
 #include <zzip/zzip.h>
-#endif
 
 void checkFile(ZZIP_DIR* dir, ZZIP_DIRENT* dirent, const char* filename)
 {
