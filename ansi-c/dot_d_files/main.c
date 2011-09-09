@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "util.h"
 
 extern int number;
 
