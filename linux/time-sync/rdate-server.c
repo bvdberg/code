@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-        int sin_size = sizeof(struct sockaddr_in);
+        unsigned int sin_size = sizeof(struct sockaddr_in);
         struct sockaddr_in hun_addr;
         int new_fd = accept(sockfd, (struct sockaddr*)&hun_addr, &sin_size);
         if (new_fd == -1) {

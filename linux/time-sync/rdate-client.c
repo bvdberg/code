@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         printf("got erroneous response\n");
         return -1;
     }
-    printf("setting time to (%d) -> %s\n", now, ctime(&now));
+    printf("setting time to (%ld) -> %s\n", now, ctime(&now));
     stime(&now);
 
     close(sockfd);
