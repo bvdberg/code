@@ -1,0 +1,4 @@
+prog
+tags
+*.o
+*.so
