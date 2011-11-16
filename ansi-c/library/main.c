@@ -49,6 +49,7 @@ int main(int argc, char* argv[])
     (*lib_func)();
 
     /* finally, close the library. */
+    printf("closing lib\n");
     dlclose(lib_handle);
 
     return 0;
