@@ -52,7 +52,7 @@ static unsigned int buffer_free(Buffer* buf) {
         return buf->size - 1;
     }
     if (buf->putIndex > buf->takeIndex) { // no wraparound
-        return buf-putIndex - buf->takeIndex;
+        return buf->putIndex - buf->takeIndex;
     } else { // wraparound
         // TODO
         return -offset;
