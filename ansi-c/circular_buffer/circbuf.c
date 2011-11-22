@@ -83,6 +83,11 @@ void buffer_print(Buffer* buf) {
             if (i%5 == 4 && i!=buf->size-1) printf(".");
         }
     }
+    printf("]    [");
+    for (i=0; i<buf->size; i++) {
+        if (i<buffer_data(buf)) printf("D");
+        else printf("_");
+    }
     printf("]\n");
 }
 
