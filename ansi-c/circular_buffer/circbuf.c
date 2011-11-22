@@ -16,7 +16,7 @@ unsigned int buffer_data(Buffer* buf) {
     if (buf->putIndex > buf->takeIndex) { // no wraparound
         return buf->putIndex - buf->takeIndex;
     } else { // wraparound
-         return buf->takeIndex - buf->putIndex - 1;
+        return (buf->size - buf->takeIndex) + buf->putIndex;
     }
 }
 
@@ -25,7 +25,11 @@ unsigned int buffer_free(Buffer* buf) {
     if (buf->putIndex == buf->takeIndex) {  // empty buffer
         return buf->size - 1;
     }
-    return buf->size - 1 - buffer_data(buf);
+    if (buf->putIndex > buf->takeIndex) { // no data wraparound
+        return buf->size -1 - (buf->putIndex - buf->takeIndex);
+    } else { // wraparound
+        return buf->takeIndex - buf->putIndex -1;
+    }
 }
 
 

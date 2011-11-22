@@ -30,8 +30,8 @@
 #define ANSI_WHITE "\033[01;37m"
 #define ANSI_NORMAL "\033[22;0m"
 
-static int producer_delay = 120000;
-static int consumer_delay = 150000;
+static int producer_delay = 12000;
+static int consumer_delay = 15000;
 
 void* producer(void* ptr)
 {
@@ -64,6 +64,8 @@ void* consumer(void* ptr)
         //printf(ANSI_RED"consumer: t=%d  p=%d  numData=%d"ANSI_NORMAL"\n",
         //    buf->takeIndex, buf->putIndex, numData);
         if (numData >= 1) buffer_remove(buf, 1);
+        if (numData == 18) consumer_delay = 11000;
+        if (numData == 0) consumer_delay = 15000;
         usleep(consumer_delay);
     }
 
