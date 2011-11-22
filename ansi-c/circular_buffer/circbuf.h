@@ -18,6 +18,8 @@ typedef struct {
 } Buffer;
 
 
+void buffer_init(Buffer* buf);
+
 unsigned int buffer_data(Buffer* buf);
 
 unsigned int buffer_free(Buffer* buf);

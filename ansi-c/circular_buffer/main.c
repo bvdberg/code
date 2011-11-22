@@ -75,10 +75,7 @@ int main() {
 
     srand(time(0));
     Buffer buffer;
-    buffer.size = BUF_SIZE;
-    buffer.putIndex = 0;
-    buffer.takeIndex = 0;
-    memset(buffer.data, 0, BUF_SIZE);
+    buffer_init(&buffer);
 
     pthread_t threads[2];
     

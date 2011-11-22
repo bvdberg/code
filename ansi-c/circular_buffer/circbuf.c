@@ -1,7 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "circbuf.h"
+
+void buffer_init(Buffer* buf) {
+    buf->size = BUF_SIZE;
+    buf->putIndex = 0;
+    buf->takeIndex = 0;
+    memset(buf->data, 0, BUF_SIZE);
+}
 
 unsigned int buffer_data(Buffer* buf) {
     if (buf->putIndex == buf->takeIndex) return 0;
