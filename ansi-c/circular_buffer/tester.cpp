@@ -73,7 +73,6 @@ TEST(CircBufTest, testWrapping) {
     buffer_add(&buf, 15);
     buffer_remove(&buf, 15);
     buffer_add(&buf, 15);
-    buffer_print(&buf);
     ASSERT_EQUAL(15, buffer_data(&buf));
     ASSERT_EQUAL(4, buffer_free(&buf));
 }
