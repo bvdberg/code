@@ -65,7 +65,7 @@ void buffer_remove(Buffer* buf, int amount) {
 
 void buffer_print(Buffer* buf) {
     int i;
-    printf("P=%2d  T=%2d  F=%2d: ", buf->putIndex, buf->takeIndex, buffer_free(buf));
+    printf("P=%2d  T=%2d  F=%2d D=%2d: ", buf->putIndex, buf->takeIndex, buffer_free(buf), buffer_data(buf));
     printf("Buffer [");
     if (buf->putIndex >= buf->takeIndex) {   // no wraparound
         for (i=0; i<buf->size; i++) {
