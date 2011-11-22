@@ -11,6 +11,7 @@ void buffer_init(Buffer* buf) {
     memset(buf->data, 0, BUF_SIZE);
 }
 
+
 unsigned int buffer_data(Buffer* buf) {
     if (buf->putIndex == buf->takeIndex) return 0;
     if (buf->putIndex > buf->takeIndex) { // no wraparound

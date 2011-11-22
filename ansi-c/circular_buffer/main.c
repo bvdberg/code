@@ -37,11 +37,9 @@ void* producer(void* ptr)
 {
     Buffer* buf = (Buffer*)ptr;
     while (1) {
-        int amount = rand() % 5 + 1;
         int numFree = buffer_free(buf);
-        amount = 1; // TEMP
-        //printf(ANSI_GREEN"producer: t=%d  p=%d:  amount=%d  free=%d"ANSI_NORMAL"\n", 
-        //        buf->takeIndex, buf->putIndex, amount, numFree);
+        int amount = rand() % 5 + 1;
+
         if (numFree < amount) {
             printf(ANSI_GREEN"producer: no free space left in queue...wating"ANSI_NORMAL"\n");
         } else {
@@ -61,11 +59,15 @@ void* consumer(void* ptr)
     Buffer* buf = (Buffer*)ptr;
     while (1) {
         int numData = buffer_data(buf);
-        //printf(ANSI_RED"consumer: t=%d  p=%d  numData=%d"ANSI_NORMAL"\n",
-        //    buf->takeIndex, buf->putIndex, numData);
-        if (numData >= 1) buffer_remove(buf, 1);
-        if (numData == 18) consumer_delay = 11000;
-        if (numData == 0) consumer_delay = 15000;
+        int amount = rand() % 5 + 1;
+        if (amount > numData) {
+            printf(ANSI_RED"consumer: no data in queue...wating"ANSI_NORMAL"\n");
+        } else {
+            buffer_remove(buf, amount);
+        }
+
+        if (numData > 17) consumer_delay = 11000;
+        if (numData <= 2) consumer_delay = 15000;
         usleep(consumer_delay);
     }
 
