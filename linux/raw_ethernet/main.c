@@ -39,16 +39,30 @@ static void printPacket(unsigned char* data, int size) {
 
 int main(int argc, const char *argv[])
 {
-    int fd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    int fd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL)); // with ethernet header
+    //int fd = socket(AF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL)); // without ethernet header
+
+    //man packet(7)
     if (fd == -1) {
         perror("socket");
         return -1;
     }
-
+#if 0
+struct sockaddr_ll {
+   unsigned short sll_family;   /* Always AF_PACKET */
+   unsigned short sll_protocol; /* Physical layer protocol */
+   int            sll_ifindex;  /* Interface number */
+   unsigned short sll_hatype;   /* Header type */
+   unsigned char  sll_pkttype;  /* Packet type */
+   unsigned char  sll_halen;    /* Length of address */
+   unsigned char  sll_addr[8];  /* Physical layer address */
+};
+#endif
     struct sockaddr_ll socket_address;
     bzero(&socket_address, sizeof(socket_address));
     socket_address.sll_family   = AF_PACKET;
     socket_address.sll_protocol = htons(ETH_P_ALL);
+    //socket_address.sll_pkttype = PACKET_HOST;
     int err = bind(fd, (struct sockaddr *) & socket_address, sizeof(socket_address));
     if (err) {
         perror("bind");
