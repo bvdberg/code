@@ -13,6 +13,7 @@ static char* type2str(unsigned short type) {
     switch (type) {
     case 0x0800: return "IP";
     case 0x0806: return "ARP";
+    case 0x8100: return "VLAN TAG";
     }
     return "unknown";
 }
@@ -24,15 +25,15 @@ static void printMac(unsigned char* data) {
 
 static void printPacket(unsigned char* data, int size) {
     struct ethhdr* hdr = (struct ethhdr*)data;
-    int i;
-    printf("dest: "); printMac(hdr->h_dest);
+    printf("%4d bytes", size);
+    printf("   dest: "); printMac(hdr->h_dest);
     printf("   src: "); printMac(hdr->h_source);
-    printf("   type: 0x%04x (%s)\n", ntohs(hdr->h_proto), type2str(ntohs(hdr->h_proto)));
-
-    for (i=0; i<16; i++) {
-         printf("%02x ", data[i]);
+    unsigned short type = ntohs(hdr->h_proto);
+    if (type == 0x8100) {   // VLAN tagging
+        printf("  VLAN TAG!");
+        // 4 bytes tag after macs, then 2 bytes type
     }
-    printf("\n");
+    printf("   type: 0x%04x (%s)\n", type, type2str(type));
 }
 
 
@@ -64,7 +65,6 @@ int main(int argc, const char *argv[])
             break;
         }
         if (size == 0) continue;
-        printf("read %d bytes\n", size);
         printPacket((unsigned char*)buffer, size);
     }
 
