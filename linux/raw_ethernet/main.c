@@ -12,6 +12,23 @@
     - dont use promiscuous mode (if not already)
     - filter out unwanted packets (in kernel?)
     - add client that sends using specific payload type and magic in payload
+    - addressing: every llsd broadcast z'n alias (naam), deze wordt gebruikt in addressing)
+    - lcp <file> <llsname>, lping <llsname>
+    - commands:
+        ANNOUNCE - ik ben ..
+        LEAVE - ik ga offline ..
+        WHOSTHERE - wie is er? of naar dest -> iedereen broadcast dan weer z'n announce
+            PING = WHOSTHERE (dest)
+    - llsc (client) commands:
+        list hosts
+        update (do WHOSTHERE)
+
+    MAC: hoogste byte, bit7 0=unicast, 1=multicast (dus 01:.. is multicast)
+
+    HEADER
+        magic (4 bytes) 0xBABE
+        cmd 1 byte (ANNOUNCE=0, LEAVE=1, PING=2, ..)
+
 */
 
 static unsigned int count;
@@ -21,6 +38,8 @@ static char* type2str(unsigned short type) {
     case 0x0800: return "IP";
     case 0x0806: return "ARP";
     case 0x8100: return "VLAN TAG";
+    case 0x86DD: return "IPV6";
+    case 0x88CC: return "LLDP";
     }
     return "unknown";
 }
