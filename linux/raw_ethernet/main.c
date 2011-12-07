@@ -8,6 +8,13 @@
 #include <strings.h>
 
 //sendfile
+/*
+    - dont use promiscuous mode (if not already)
+    - filter out unwanted packets (in kernel?)
+    - add client that sends using specific payload type and magic in payload
+*/
+
+static unsigned int count;
 
 static char* type2str(unsigned short type) {
     switch (type) {
@@ -25,7 +32,8 @@ static void printMac(unsigned char* data) {
 
 static void printPacket(unsigned char* data, int size) {
     struct ethhdr* hdr = (struct ethhdr*)data;
-    printf("%4d bytes", size);
+    printf("[%5d]", count);
+    printf("   %4d bytes", size);
     printf("   dest: "); printMac(hdr->h_dest);
     printf("   src: "); printMac(hdr->h_source);
     unsigned short type = ntohs(hdr->h_proto);
@@ -79,9 +87,11 @@ struct sockaddr_ll {
             break;
         }
         if (size == 0) continue;
+        count++;
         printPacket((unsigned char*)buffer, size);
     }
 
     close(fd);
     return 0;
 }
+
