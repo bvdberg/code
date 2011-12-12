@@ -55,6 +55,19 @@ int main(void) {
         unsigned char* cp = (unsigned char*)&hwaddr.ifr_hwaddr.sa_data[0];
         printf("  %.2x:%.2x:%.2x:%.2x:%.2x:%.2x", cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]);
 
+        // man netdevice(7)
+        // show MTU
+        struct ifreq macnr;
+        bzero(&macnr, sizeof(macnr));
+        macnr.ifr_addr.sa_family = AF_INET;
+        strncpy(macnr.ifr_name, item->ifr_name, IFNAMSIZ-1);
+        if (ioctl(sck, SIOCGIFMTU, &macnr) != 0) {
+            perror("ioctl(SIOCGIFMTU)");
+            continue;
+        }
+        int mtu = macnr.ifr_mtu;
+        printf("  MTU=%d\n", mtu);
+
         //printf("%6s -> %12s\t", netmask.ifr_name, netmask.ifr_hwaddr.sa_data);
         // ioctl_list
     //    SIOCGIFNETMASK
