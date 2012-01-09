@@ -22,6 +22,7 @@ static char* type2str(unsigned short type) {
     case 0x0806: return "ARP";
     case 0x8100: return "VLAN TAG";
     case 0x88CC: return "LLDP";
+    case 0xBABE: return "LLS";
     }
     return "unknown";
 }

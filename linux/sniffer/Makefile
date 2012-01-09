@@ -1,5 +1,8 @@
+#CC=gcc
+CC=arm-none-linux-gnueabi-gcc
+
 test: main.c
-	gcc -Wall main.c -o test
+	$(CC) -Wall main.c -o test
 
 clean:
 	rm -f test
