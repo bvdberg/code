@@ -11,7 +11,10 @@
 
 static int count = 0;
 
-// NOTE: only works on Little Endian?
+// TODO: use pcap_compile + pcap_filter (see http://www.tcpdump.org/pcap.html)
+
+
+// NOTE: only works on Little Endian
 struct RtpHeader
 {
     //6 fields depend on Little Endian
