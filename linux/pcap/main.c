@@ -17,53 +17,42 @@
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
 
-void receive_cb(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
-                 packet)
+static int count = 0;
+void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet)
 {
-    static int count = 1;
-    fprintf(stdout,"%d, ",count);
-    if (count == 4)
-        fprintf(stdout,"Come on baby sayyy you love me!!! ");
-    if (count == 7)
-        fprintf(stdout,"Tiiimmmeesss!! ");
-    fflush(stdout);
     count++;
+    if (pkthdr->caplen != pkthdr->len) {
+        printf("weird sizes!\n");
+        exit(-1);
+    }
+    printf("[%5d] %d bytes  len=%d\n", count, pkthdr->caplen, pkthdr->len);
+    //struct pcap_pkthdr hdr;     /* pcap.h */
+    //struct ether_header *eptr;  /* net/ethernet.h */
 }
 
 int main(int argc,char **argv)
 {
-    int i;
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* descr;
-    const u_char *packet;
-    struct pcap_pkthdr hdr;     /* pcap.h */
-    struct ether_header *eptr;  /* net/ethernet.h */
+    //const u_char *packet;
+    //struct pcap_pkthdr hdr;     /* pcap.h */
+    //struct ether_header *eptr;  /* net/ethernet.h */
 
-    if (argc != 2) {
-        fprintf(stdout,"Usage: %s numpackets\n",argv[0]);
-        return 0;
-    }
-
-    /* grab a device to peak into... */
     dev = pcap_lookupdev(errbuf);
     if (dev == NULL)
     {
-        printf("%s\n",errbuf);
+        printf("%s\n", errbuf);
         exit(1);
     }
-    /* open device for reading */
-    descr = pcap_open_live(dev,BUFSIZ,0,-1,errbuf);
+    descr = pcap_open_live(dev, BUFSIZ, 0, -1, errbuf);
     if (descr == NULL)
     {
-        printf("pcap_open_live(): %s\n",errbuf);
+        printf("pcap_open_live(): %s\n", errbuf);
         exit(1);
     }
 
-    /* allright here we call pcap_loop(..) and pass in our callback function */
-    /* int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)*/
-    /* If you are wondering what the user argument is all about, so am I!!   */
-    pcap_loop(descr,atoi(argv[1]),receive_cb,NULL);
+    pcap_loop(descr, 0, receive_cb, NULL);
 
     printf("done\n");
     return 0;
