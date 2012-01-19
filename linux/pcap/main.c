@@ -15,8 +15,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
-#include <netinet/ip.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
 static char* ip2str(unsigned int addr) {
     static char buffer[4][20];
@@ -25,7 +26,7 @@ static char* ip2str(unsigned int addr) {
     index++;
     if (index == 4) index = 0;
     char* cp = buffer[index];
-    sprintf(cp, "%d.%d.%d.%d", a[0], a[1], a[2], a[3]);
+    sprintf(cp, "%d.%d.%d.%d", a[3], a[2], a[1], a[0]);
     return cp;
 }
 
@@ -43,9 +44,12 @@ void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
     if (type != 0x800) return;  // NO ip
     struct iphdr* hdr = (struct iphdr*)(&eptr[1]);
     if (hdr->protocol != IPPROTO_UDP) return; // NO UDP
-    printf("[%5d] %4d bytes  ", count, pkthdr->caplen);
-    printf("src=%15s  dst=%15s  protocol=%d\n", ip2str(ntohl(hdr->saddr)), ip2str(ntohl(hdr->daddr)), hdr->protocol);
-
+    struct udphdr* hdr2 = (struct udphdr*)(&hdr[1]);
+    printf("[%5d] %4d bytes", count, pkthdr->caplen);
+    printf("  ETH[]");    // TODO print macs
+    printf("  IP[src=%15s  dst=%15s  proto=%d]", ip2str(ntohl(hdr->saddr)), ip2str(ntohl(hdr->daddr)), hdr->protocol);
+    printf("  UDP[src=%d  dst=%d]", ntohs(hdr2->source), ntohs(hdr2->dest));
+    printf("\n");
 }
 
 int main(int argc,char **argv)
