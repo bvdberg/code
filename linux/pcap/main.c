@@ -11,6 +11,24 @@
 
 static int count = 0;
 
+// NOTE: only works on Little Endian?
+struct RtpHeader
+{
+    //6 fields depend on Little Endian
+    unsigned int csrccount:4;
+    unsigned int extension:1;
+    unsigned int padding:1;
+    unsigned int version:2;
+    unsigned int payloadtype:7;
+    unsigned int marker:1;
+
+    //these are converted later with ntohs/ntohl function
+    u_int16_t sequencenumber;
+    u_int32_t timestamp;
+    u_int32_t ssrc;
+} __attribute__ ((__packed__));
+
+
 static char* mac2str(unsigned char* data) {
     static char buffer[4][24];
     static int index = 0;
