@@ -1,13 +1,3 @@
-/**********************************************************************
-* file:   testpcap2.c
-* date:   2001-Mar-14 12:14:19 AM
-* Author: Martin Casado
-* Last Modified:2001-Mar-14 12:14:11 AM
-*
-* Description: Q&D proggy to demonstrate the use of pcap_loop
-*
-**********************************************************************/
-
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +8,8 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+
+static int count = 0;
 
 static char* mac2str(unsigned char* data) {
     static char buffer[4][24];
@@ -40,8 +32,7 @@ static char* ip2str(unsigned int addr) {
     return cp;
 }
 
-static int count = 0;
-void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet)
+static void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet)
 {
     count++;
     if (pkthdr->caplen != pkthdr->len) {
@@ -60,24 +51,23 @@ void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
     printf("  IP[src=%15s  dst=%15s  proto=%d]", ip2str(ntohl(hdr->saddr)), ip2str(ntohl(hdr->daddr)), hdr->protocol);
     printf("  UDP[src=%d  dst=%d]", ntohs(hdr2->source), ntohs(hdr2->dest));
     printf("\n");
+    // TODO filter RTP
 }
 
 int main(int argc,char **argv)
 {
-    char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* descr;
     //const u_char *packet;
     //struct pcap_pkthdr hdr;     /* pcap.h */
     //struct ether_header *eptr;  /* net/ethernet.h */
 
-    dev = pcap_lookupdev(errbuf);
+    char *dev = pcap_lookupdev(errbuf);
     if (dev == NULL)
     {
         printf("%s\n", errbuf);
         exit(1);
     }
-    descr = pcap_open_live(dev, BUFSIZ, 0, -1, errbuf);
+    pcap_t* descr = pcap_open_live(dev, BUFSIZ, 0, -1, errbuf);
     if (descr == NULL)
     {
         printf("pcap_open_live(): %s\n", errbuf);
@@ -89,3 +79,4 @@ int main(int argc,char **argv)
     printf("done\n");
     return 0;
 }
+
