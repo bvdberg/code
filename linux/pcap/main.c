@@ -19,6 +19,16 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
+static char* mac2str(unsigned char* data) {
+    static char buffer[4][24];
+    static int index = 0;
+    index++;
+    if (index == 4) index = 0;
+    char* cp = buffer[index];
+    sprintf(cp, "%02x:%02x:%02x:%02x:%02x:%02x", data[0], data[1], data[2], data[3], data[4], data[5]);
+    return cp;
+}
+
 static char* ip2str(unsigned int addr) {
     static char buffer[4][20];
     static int index = 0;
@@ -46,7 +56,7 @@ void receive_cb(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
     if (hdr->protocol != IPPROTO_UDP) return; // NO UDP
     struct udphdr* hdr2 = (struct udphdr*)(&hdr[1]);
     printf("[%5d] %4d bytes", count, pkthdr->caplen);
-    printf("  ETH[]");    // TODO print macs
+    printf("  ETH[src=%s dst=%s]", mac2str(eptr->ether_shost), mac2str(eptr->ether_dhost));
     printf("  IP[src=%15s  dst=%15s  proto=%d]", ip2str(ntohl(hdr->saddr)), ip2str(ntohl(hdr->daddr)), hdr->protocol);
     printf("  UDP[src=%d  dst=%d]", ntohs(hdr2->source), ntohs(hdr2->dest));
     printf("\n");
