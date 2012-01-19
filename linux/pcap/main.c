@@ -1,77 +1,70 @@
-/* ldev.c
-   Martin Casado
+/**********************************************************************
+* file:   testpcap2.c
+* date:   2001-Mar-14 12:14:19 AM
+* Author: Martin Casado
+* Last Modified:2001-Mar-14 12:14:11 AM
+*
+* Description: Q&D proggy to demonstrate the use of pcap_loop
+*
+**********************************************************************/
 
-   To compile:
-   >gcc ldev.c -lpcap
-
-   Looks for an interface, and lists the network ip
-   and mask associated with that interface.
-*/
+#include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pcap.h>  /* GIMME a libpcap plz! */
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/if_ether.h>
 
-int main(int argc, char **argv)
+void receive_cb(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
+                 packet)
 {
-    char *dev; /* name of the device to use */
-    char *net; /* dot notation of the network address */
-    char *mask;/* dot notation of the network mask    */
-    int ret;   /* return code */
+    static int count = 1;
+    fprintf(stdout,"%d, ",count);
+    if (count == 4)
+        fprintf(stdout,"Come on baby sayyy you love me!!! ");
+    if (count == 7)
+        fprintf(stdout,"Tiiimmmeesss!! ");
+    fflush(stdout);
+    count++;
+}
+
+int main(int argc,char **argv)
+{
+    int i;
+    char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
-    bpf_u_int32 netp; /* ip          */
-    bpf_u_int32 maskp;/* subnet mask */
-    struct in_addr addr;
+    pcap_t* descr;
+    const u_char *packet;
+    struct pcap_pkthdr hdr;     /* pcap.h */
+    struct ether_header *eptr;  /* net/ethernet.h */
 
-    /* ask pcap to find a valid device for use to sniff on */
+    if (argc != 2) {
+        fprintf(stdout,"Usage: %s numpackets\n",argv[0]);
+        return 0;
+    }
+
+    /* grab a device to peak into... */
     dev = pcap_lookupdev(errbuf);
-
-    /* error checking */
     if (dev == NULL)
     {
         printf("%s\n",errbuf);
         exit(1);
     }
-
-    /* print out device name */
-    printf("DEV: %s\n",dev);
-
-    /* ask pcap for the network address and mask of the device */
-    ret = pcap_lookupnet(dev,&netp,&maskp,errbuf);
-
-    if (ret == -1)
+    /* open device for reading */
+    descr = pcap_open_live(dev,BUFSIZ,0,-1,errbuf);
+    if (descr == NULL)
     {
-        printf("%s\n",errbuf);
+        printf("pcap_open_live(): %s\n",errbuf);
         exit(1);
     }
 
-    /* get the network address in a human readable form */
-    addr.s_addr = netp;
-    net = inet_ntoa(addr);
+    /* allright here we call pcap_loop(..) and pass in our callback function */
+    /* int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)*/
+    /* If you are wondering what the user argument is all about, so am I!!   */
+    pcap_loop(descr,atoi(argv[1]),receive_cb,NULL);
 
-    if (net == NULL)/* thanks Scott :-P */
-    {
-        perror("inet_ntoa");
-        exit(1);
-    }
-
-    printf("NET: %s\n",net);
-
-    /* do the same as above for the device's mask */
-    addr.s_addr = maskp;
-    mask = inet_ntoa(addr);
-
-    if (mask == NULL)
-    {
-        perror("inet_ntoa");
-        exit(1);
-    }
-
-    printf("MASK: %s\n",mask);
-
+    printf("done\n");
     return 0;
 }
-
