@@ -2,10 +2,6 @@
 #include <unistd.h>
 #include <setjmp.h>
 
-void longjmp(jmp_buf env, int val);
-
-void siglongjmp(sigjmp_buf env, int val);
-
 static jmp_buf env;
 static jmp_buf env2;
 
