@@ -17,7 +17,7 @@ int function2(char n) {
 void function1() {
     char i;
     for (i='A'; i<'H'; i++) {
-        printf("----- %c ----\n", i);
+        printf("----- %c -----\n", i);
         int res = setjmp(env);
         if (res != 0) {
             printf("coming from jump ONE, res=%d\n", res);
