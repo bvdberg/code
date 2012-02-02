@@ -13,13 +13,7 @@
  * limitations under the License.
  */
 
-#include <setjmp.h>
-#include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <stdint.h>
 
 
 #define ANSI_BLACK "\033[0;30m"
@@ -45,11 +39,11 @@ void __cyg_profile_func_exit (void* this_fn, void *call_site) __attribute__ ((no
 
 void __cyg_profile_func_enter (void* this_fn, void *call_site)
 {
-    printf("enter\n");
+    printf("enter %p from %p\n", this_fn, call_site);
 }
 
 void __cyg_profile_func_exit (void* this_fn, void *call_site)
 {
-    printf("leave\n");
+    printf("leave %p from %p\n", this_fn, call_site);
 }
 
