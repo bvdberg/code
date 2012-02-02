@@ -54,6 +54,8 @@
 
 #include <glib.h>
 
+static int indent = 0;
+
 struct bfdentry
 {
     unsigned int size;
@@ -62,76 +64,38 @@ struct bfdentry
     bfd* dso;
 };
 
-void print_symbol(void* this_fn, long normalized_addr, struct bfdentry *abfd, char *dsoname);
-struct bfdentry* loaddso(char *dsoname);
-
-void getexe(char *exe)
-{
-    char buffer[100];
-    snprintf(buffer, sizeof(buffer), "/proc/%d/exe", getpid());
-    int len;
-    if ((len = readlink(buffer, exe, PATH_MAX)) == -1)
-    {
-        perror(buffer);
-        abort();
-    }
-    exe[len] = '\0';
+static void print_indent() {
+    int i;
+    for (i=0; i<indent; i++) printf("  ");
 }
 
-void __cyg_profile_func_enter (void* this_fn, void *call_site)
-       __attribute__ ((no_instrument_function));
-
-GHashTable* address_hash_table = 0;
-GHashTable* bfd_hash_table = 0;
-
-void __cyg_profile_func_enter (void* this_fn, void *call_site)
+static void print_symbol(void* this_fn, long normalized_addr, struct bfdentry *abfd, char *dsoname)
 {
-    static char exe[PATH_MAX];
-    int found = 0, loop = 0;
-    struct link_map* map;
+    bfd* dso = abfd->dso;
+    unsigned int size = abfd->size;
+    long symcount = abfd->symcount;
+    bfd_byte *from, *fromend;
 
-    if (exe[0] == 0)
-        getexe(exe);
+    from = (bfd_byte *)abfd->syms;
+    fromend = from + abfd->symcount * abfd->size;
+    for (; from < fromend; from += size)
+    {  
+        asymbol* store;
+        asymbol* sym;
+        symbol_info syminfo;
 
-    if (!address_hash_table)
-        address_hash_table = g_hash_table_new(NULL, NULL);
+        sym = bfd_minisymbol_to_symbol(dso, FALSE, (const PTR)from, store);
 
-    if (g_hash_table_lookup(address_hash_table, this_fn))
-        return;
-
-    if (!bfd_hash_table)
-        bfd_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
-
-    map = _r_debug.r_map;
-    while (map != NULL)
-    {
-	if ((!loop ? map->l_addr : 1) && 
-            (this_fn >= (void*)(map->l_addr)) && (this_fn <= (void*)(map->l_ld)))
+        bfd_get_symbol_info(dso, sym, &syminfo);
+        if (syminfo.value == normalized_addr)
         {
-            struct bfdentry *abfd;
-	    char *dsoname = strcmp(map->l_name, "") ? map->l_name : exe;
-            long relative_address = ((long)(this_fn) - map->l_addr);
-
-            g_hash_table_insert(address_hash_table, this_fn, (gpointer)relative_address);
-
-            abfd = (struct bfdentry*)(g_hash_table_lookup(bfd_hash_table, dsoname));
-
-            if (!abfd)
-            {
-                g_hash_table_insert(bfd_hash_table, dsoname, loaddso(dsoname));
-                abfd = (struct bfdentry*)(g_hash_table_lookup(bfd_hash_table, dsoname));
+            const char *nm = bfd_asymbol_name(sym);
+            if (nm && nm[0]) {
+                indent++;
+                print_indent();
+                printf("%s (%p)\n", nm, this_fn);
+	            //printf("%.*p %.*p %s %s\n", sizeof(char*)*2, this_fn, sizeof(char*)*2, normalized_addr, dsoname, nm);
             }
-
-            print_symbol(this_fn, relative_address, abfd, dsoname);
-
-            found = 1;
-            break;
-        }
-	map = map->l_next;
-        if (!map && !found && !loop)
-        {
-            ++loop;
-            map = _r_debug.r_map;
         }
     }
 }
@@ -164,29 +128,78 @@ struct bfdentry* loaddso(char *dsoname)
     return entry;
 }
 
-void print_symbol(void* this_fn, long normalized_addr, struct bfdentry *abfd, char *dsoname)
+void getexe(char *exe)
 {
-    bfd* dso = abfd->dso;
-    unsigned int size = abfd->size;
-    long symcount = abfd->symcount;
-    bfd_byte *from, *fromend;
+    char buffer[100];
+    snprintf(buffer, sizeof(buffer), "/proc/%d/exe", getpid());
+    int len;
+    if ((len = readlink(buffer, exe, PATH_MAX)) == -1)
+    {
+        perror(buffer);
+        abort();
+    }
+    exe[len] = '\0';
+}
 
-    from = (bfd_byte *)abfd->syms;
-    fromend = from + abfd->symcount * abfd->size;
-    for (; from < fromend; from += size)
-    {  
-        asymbol* store;
-        asymbol* sym;
-        symbol_info syminfo;
+void __cyg_profile_func_enter (void* this_fn, void *call_site) __attribute__ ((no_instrument_function));
+void __cyg_profile_func_exit (void* this_fn, void *call_site) __attribute__ ((no_instrument_function));
 
-        sym = bfd_minisymbol_to_symbol(dso, FALSE, (const PTR)from, store);
+GHashTable* address_hash_table = 0;
+GHashTable* bfd_hash_table = 0;
 
-        bfd_get_symbol_info(dso, sym, &syminfo);
-        if (syminfo.value == normalized_addr)
+void __cyg_profile_func_enter (void* this_fn, void *call_site)
+{
+    static char exe[PATH_MAX];
+    int found = 0, loop = 0;
+    struct link_map* map;
+
+    if (exe[0] == 0) getexe(exe);
+
+    if (!address_hash_table) address_hash_table = g_hash_table_new(NULL, NULL);
+
+    // dont skip duplicates
+    //if (g_hash_table_lookup(address_hash_table, this_fn)) return;
+
+    if (!bfd_hash_table)
+        bfd_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
+
+    map = _r_debug.r_map;
+    while (map != NULL) {
+	    if ((!loop ? map->l_addr : 1) && 
+            (this_fn >= (void*)(map->l_addr)) && (this_fn <= (void*)(map->l_ld)))
         {
-            const char *nm = bfd_asymbol_name(sym);
-            if (nm && nm[0])
-	        printf("%.*p %.*p %s %s\n", sizeof(char*)*2, this_fn, sizeof(char*)*2, normalized_addr, dsoname, nm);
+            struct bfdentry *abfd;
+	        char *dsoname = strcmp(map->l_name, "") ? map->l_name : exe;
+            long relative_address = ((long)(this_fn) - map->l_addr);
+
+            g_hash_table_insert(address_hash_table, this_fn, (gpointer)relative_address);
+
+            abfd = (struct bfdentry*)(g_hash_table_lookup(bfd_hash_table, dsoname));
+
+            if (!abfd)
+            {
+                g_hash_table_insert(bfd_hash_table, dsoname, loaddso(dsoname));
+                abfd = (struct bfdentry*)(g_hash_table_lookup(bfd_hash_table, dsoname));
+            }
+
+            print_symbol(this_fn, relative_address, abfd, dsoname);
+
+            found = 1;
+            break;
+        }
+	    map = map->l_next;
+        if (!map && !found && !loop)
+        {
+            ++loop;
+            map = _r_debug.r_map;
         }
     }
 }
+
+void __cyg_profile_func_exit (void* this_fn, void *call_site) {
+    indent--;
+}
+
+
+
+

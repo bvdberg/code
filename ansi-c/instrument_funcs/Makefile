@@ -1,17 +1,13 @@
-all: lib.so test
+all: libinstrument.so test
 
-lib.so: lib.c
-	gcc -fPIC lib.c -shared -nostdlib -o lib.so
+libinstrument.so: instrument.c
+	gcc -fpic -g instrument.c -shared -o libinstrument.so -lbfd -liberty `pkg-config --cflags --libs glib-2.0`
 
 test: main.c
 	gcc -finstrument-functions main.c -o test
 
-preload:
-	LD_PRELOAD=./lib.so ./test
-
-linker:
-	gcc -fpic -g instrument.c -shared -o libinstrument.so -lbfd -liberty `pkg-config --cflags --libs glib-2.0`
-	gcc main.c -o test -Xlinker -T ldorder
+preload: test libinstrument.so
+	LD_PRELOAD=./libinstrument.so ./test
 
 clean:
 	rm -f *.o *.so test
