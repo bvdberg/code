@@ -100,7 +100,7 @@ static void print_symbol(void* this_fn, long normalized_addr, struct bfdentry *a
     }
 }
 
-struct bfdentry* loaddso(char *dsoname)
+static struct bfdentry* loaddso(char *dsoname)
 {
     struct bfdentry *entry;
 
@@ -128,7 +128,7 @@ struct bfdentry* loaddso(char *dsoname)
     return entry;
 }
 
-void getexe(char *exe)
+static void getexe(char *exe)
 {
     char buffer[100];
     snprintf(buffer, sizeof(buffer), "/proc/%d/exe", getpid());
@@ -144,8 +144,8 @@ void getexe(char *exe)
 void __cyg_profile_func_enter (void* this_fn, void *call_site) __attribute__ ((no_instrument_function));
 void __cyg_profile_func_exit (void* this_fn, void *call_site) __attribute__ ((no_instrument_function));
 
-GHashTable* address_hash_table = 0;
-GHashTable* bfd_hash_table = 0;
+static GHashTable* address_hash_table = 0;
+static GHashTable* bfd_hash_table = 0;
 
 void __cyg_profile_func_enter (void* this_fn, void *call_site)
 {
