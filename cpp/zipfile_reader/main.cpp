@@ -4,28 +4,28 @@
 
 void checkFile(ZZIP_DIR* dir, ZZIP_DIRENT* dirent, const char* filename)
 {
+    if (strcmp(filename, dirent->d_name) != 0) return;
+
     int flags = 0;
     ZZIP_FILE* f1 = zzip_file_open(dir, dirent->d_name, flags);
     if (f1 == NULL) {
         fprintf(stderr, "zzip_file_open failed: %s\n", zzip_strerror_of(dir));
         return;
     }
-    bool print = false;
-    if (strcmp(filename, dirent->d_name) == 0) print = true;
 
     // read file
     char buf[4097];
     int total = dirent->st_size;
     int bytes = 0;
-    if (print) printf("---------------------\n");
+    printf("---------------------\n");
     while (bytes != total) {
         zzip_ssize_t size = zzip_file_read(f1, buf, 4096);
         bytes += size;
         buf[size] = 0;
-        if (print) printf("%s", buf);
+        printf("%s", buf);
         //printf("read %4d  %6d/%d\n", size, bytes, total);
     }
-    if (print) printf("\n---------------------\n");
+    printf("\n---------------------\n");
 
     int err = zzip_file_close(f1);
     if (err != 0) {
