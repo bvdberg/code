@@ -9,8 +9,10 @@
 
 #include "ubi-media.h"
 
-int main() {
-    int fd = open("dump", O_RDONLY);
+int main(int argc, const char *argv[]) {
+    if (argc != 2) return -1;
+
+    int fd = open(argv[1], O_RDONLY);
     if (fd == -1) {
         perror("open");
         return -1;
@@ -73,9 +75,10 @@ int main() {
                 unsigned int alignment = ntohl(vtbl->alignment);
                 unsigned int data_pad = ntohl(vtbl->data_pad);
                 unsigned int name_len = ntohs(vtbl->name_len);
+                unsigned int crc = ntohl(vtbl->crc);
                 printf("    VOLUME_ID: res_peds=%d  align=%d  data_pad=%d  type=%d  marker=%d\n",
                     res_pebs, alignment, data_pad, vtbl->vol_type, vtbl->upd_marker);
-                printf("    len=%d  name=%s  flags=%d\n", name_len, vtbl->name, vtbl->flags);
+                printf("    len=%d  name=%s  flags=%d  crc=0x%08x\n", name_len, vtbl->name, vtbl->flags, crc);
                 vtbl_count++;
             }
         }
@@ -84,6 +87,8 @@ int main() {
         index++;
     }
     printf("%d PEBs,  %d VIDs  %d VTBLs\n", index, vid_count, vtbl_count);
+    printf("SIZEOF ec_hdr=%d  vid_hdr=%d  vtbl=%d\n",
+        sizeof(struct ubi_ec_hdr), sizeof(struct ubi_vid_hdr), sizeof(struct ubi_vtbl_record));
 
     munmap(map, size);
     return 0;
