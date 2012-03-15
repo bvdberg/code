@@ -9,6 +9,8 @@
 
 #include "ubi-media.h"
 
+#define be64_to_cpu(x) __swab64((x))
+
 int main(int argc, const char *argv[]) {
     if (argc != 2) return -1;
 
@@ -47,11 +49,11 @@ int main(int argc, const char *argv[]) {
             printf("[%03d] [%08d] invalid magic\n", index, offset);
             break;
         }
-        // TODO ec is 64 bit, but we dont have macro for that
+        unsigned long ec = be64_to_cpu(hdr->ec);
         unsigned int vid = ntohl(hdr->vid_hdr_offset);
         unsigned int data = ntohl(hdr->data_offset);
         unsigned int crc = ntohl(hdr->hdr_crc);
-        printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x\n", index, offset, vid, data, crc);
+        printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x  ec=%ld\n", index, offset, vid, data, crc, ec);
 
         struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
