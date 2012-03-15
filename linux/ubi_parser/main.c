@@ -11,6 +11,18 @@
 
 #define be64_to_cpu(x) __swab64((x))
 
+/*
+    - flashing to file: args: input file, num_blocks, output_file
+    - check input file
+    - check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
+    - open output file (deleting existing one)
+    - schrijf elke blok uit volume 0 naar zelfde blok in output file
+    - creeer 2 nieuwe volumeID blocken met nieue reserved_pebs en crc
+    - vul resterende blokken op met default block (hardcoded values including crc)
+        en 0xff als data fill
+    - close output file
+*
+
 int main(int argc, const char *argv[]) {
     if (argc != 2) return -1;
 
