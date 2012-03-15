@@ -11,15 +11,18 @@
 #include "ubi-media.h"
 
 #define BLOCKSIZE 128*1024
+// for volume_id blocks?
+#define RESERVED_BLOCKS 4
 
 #define be64_to_cpu(x) __swab64((x))
 
 /*
-    - flashing to file: args: input file, num_blocks, output_file
-    - check input file for correctness
-    - also check types (dynamic not static, blocks in order? etc)
-    - check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
-    - malloc totale grootte (output_map)
+    + flashing to file: args: input file, num_blocks, output_file
+    + check input file for correctness
+        -> check if size multiple of num_blocks
+    + also check types (dynamic not static, etc) -> SKIP
+    + check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
+    + malloc totale grootte + init to zero (output_map)
     - schrijf elke blok uit volume 0 naar zelfde blok in output file
     - creeer 2 nieuwe volumeID blocken met nieue reserved_pebs en crc
     - vul resterende blokken op met default block (hardcoded values including crc)
@@ -32,7 +35,14 @@
 enum Mode { MODE_SHOW=0, MODE_FLASH };
 enum Mode mode = MODE_SHOW;
 
-static void parse_ubi(void* input_map, int size) {
+struct ubi_info {
+    int num_erase_blocks;
+    int num_data_blocks;
+    int num_volume_blocks;
+};
+
+
+static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
     unsigned char* base = input_map;
     int offset = 0;
     int index = 0;
@@ -42,7 +52,7 @@ static void parse_ubi(void* input_map, int size) {
         struct ubi_ec_hdr* hdr = (struct ubi_ec_hdr*)(base + offset);
         if (ntohl(hdr->magic) != UBI_EC_HDR_MAGIC) {
             printf("[%03d] [%08d] invalid magic\n", index, offset);
-            break;
+            return 1;
         }
         unsigned long ec = be64_to_cpu(hdr->ec);
         unsigned int vid = ntohl(hdr->vid_hdr_offset);
@@ -83,12 +93,91 @@ static void parse_ubi(void* input_map, int size) {
         offset += BLOCKSIZE;
         index++;
     }
+    if (size != BLOCKSIZE * index) {
+        printf("Invalid size, expected %d, got %d\n", BLOCKSIZE * index, size);
+        return 1;
+    }
     printf("%d PEBs,  %d VIDs  %d VTBLs\n", index, vid_count, vtbl_count);
     printf("SIZEOF ec_hdr=%d  vid_hdr=%d  vtbl=%d\n",
         sizeof(struct ubi_ec_hdr), sizeof(struct ubi_vid_hdr), sizeof(struct ubi_vtbl_record));
+    if (info) {
+        info->num_erase_blocks = index;
+        info->num_data_blocks = vid_count - vtbl_count;
+        info->num_volume_blocks = vtbl_count;
+    }
+    return 0;
 }
 
 
+static int copy_volume(void* input_map, int input_size, void* output_map, unsigned int volumeID) {
+    int output_index = 0;
+
+    unsigned char* base = input_map;
+    int offset = 0;
+    int input_index = 0;
+    while (offset < input_size) {
+        struct ubi_ec_hdr* hdr = (struct ubi_ec_hdr*)(base + offset);
+        if (ntohl(hdr->magic) != UBI_EC_HDR_MAGIC) {
+            printf("[%03d] [%08d] invalid magic\n", input_index, offset);
+            return 0;
+        }
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
+        if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
+            unsigned int vol_id = ntohl(vid_hdr->vol_id);
+            unsigned int lnum = ntohl(vid_hdr->lnum);
+            if (vol_id == volumeID) {
+                void* input_ptr = (void*)(base + offset);
+                void* output_ptr = output_map + (output_index * BLOCKSIZE);
+                printf("copying block %d to block %d,  index %d  0x%08x -> 0x%08x\n", input_index, output_index, lnum, (unsigned int)input_ptr, (unsigned int)output_ptr);
+                memcpy(output_ptr, input_ptr, BLOCKSIZE);
+                // copy block to output
+                output_index++;
+            }
+        }
+
+        offset += BLOCKSIZE;
+        input_index++;
+    }
+    return output_index;
+}
+
+
+static void flash_ubi(void* input_map, int size, const char* output_file, int num_blocks) {
+    struct ubi_info info;
+    int err = parse_ubi(input_map, size, &info);
+    if (err) return;
+    printf("INFO: %d blocks [%d data, %d vol]\n", info.num_erase_blocks, info.num_data_blocks, info.num_volume_blocks);
+    // Q: check for empty blocks?
+    // check if output size is sufficient
+    int needed_blocks = info.num_data_blocks + RESERVED_BLOCKS;
+    if (num_blocks < needed_blocks) {
+        printf("Not enough size, got %d blocks, need %d blocks\n", num_blocks, needed_blocks);
+        return;
+    }
+
+    int output_size = num_blocks * BLOCKSIZE;
+    printf("output file %s,  size %d\n", output_file, output_size);
+    void* output_map = calloc(num_blocks, BLOCKSIZE);
+    if (output_map == NULL) {
+        perror("calloc");
+        return;
+    }
+    // write Volume0 blocks to output_map
+    int output_index = copy_volume(input_map, size, output_map, 0);
+    printf("copied %d blocks\n", output_index);
+
+    // copy volume table entries, and resize for output size, recalc crc, etc
+
+    // mark remaining blocks as empty
+    // TODO
+
+    // open output file
+    // write output_map to output_file
+    // close output file
+    free (output_map);
+}
+
+        
 int main(int argc, const char *argv[]) {
     const char* input_file = NULL;
     const char* output_file = 0;
@@ -132,12 +221,12 @@ int main(int argc, const char *argv[]) {
     }
     close(fd);
 
-
     switch (mode) {
     case MODE_SHOW:
-        parse_ubi(input_map, size);
+        parse_ubi(input_map, size, NULL);
         break;
     case MODE_FLASH:
+        flash_ubi(input_map, size, output_file, num_blocks);
         break;
     }
 /*
