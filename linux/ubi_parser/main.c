@@ -11,6 +11,7 @@
 #include "ubi-media.h"
 
 #define BLOCKSIZE 128*1024
+#define PAGE_SIZE 4096
 // for volume_id blocks?
 #define RESERVED_BLOCKS 4
 
@@ -142,6 +143,26 @@ static int copy_volume(void* input_map, int input_size, void* output_map, unsign
 }
 
 
+static void mark_empty_blocks(void* output_map, int output_index, int num_blocks) {
+    struct ubi_ec_hdr ec_hdr;
+    memset(&ec_hdr, 0, sizeof(struct ubi_ec_hdr));
+    ec_hdr.magic = cpu_to_be32(UBI_EC_HDR_MAGIC);
+    ec_hdr.version = UBI_VERSION;
+    ec_hdr.ec = cpu_to_be64(3); // to match crc
+    ec_hdr.vid_hdr_offset = cpu_to_be32(64);
+    ec_hdr.data_offset = cpu_to_be32(128);
+    ec_hdr.hdr_crc = cpu_to_be32(0xf55dc15a);
+
+
+    while (output_index < num_blocks) {
+        void* output_ptr = output_map + (output_index * BLOCKSIZE);
+        memset(output_ptr, 0xff, BLOCKSIZE);
+        memcpy(output_ptr, &ec_hdr, UBI_EC_HDR_SIZE);
+        output_index++;
+    }
+}
+
+
 static void flash_ubi(void* input_map, int size, const char* output_file, int num_blocks) {
     struct ubi_info info;
     int err = parse_ubi(input_map, size, &info);
@@ -169,11 +190,27 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
     // copy volume table entries, and resize for output size, recalc crc, etc
 
     // mark remaining blocks as empty
-    // TODO
+    mark_empty_blocks(output_map, output_index, num_blocks);
 
     // open output file
+    int out_fd = open(output_file, O_WRONLY | O_TRUNC | O_CREAT, 0660);
+    if (out_fd == -1) {
+        perror("open");
+        goto out;
+    }
+
     // write output_map to output_file
-    // close output file
+    int pages = output_size / PAGE_SIZE;
+    int i;
+    for (i=0; i<pages; i++) {
+        int written = write(out_fd, output_map + i * PAGE_SIZE, PAGE_SIZE);
+        if (written != PAGE_SIZE) {
+            perror("write");
+            break;
+        }
+    }
+    close (out_fd);
+out:
     free (output_map);
 }
 
