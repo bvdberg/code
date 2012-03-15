@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -9,24 +10,50 @@
 
 #include "ubi-media.h"
 
+#define BLOCKSIZE 128*1024
+
 #define be64_to_cpu(x) __swab64((x))
 
 /*
     - flashing to file: args: input file, num_blocks, output_file
-    - check input file
+    - check input file for correctness
+    - also check types (dynamic not static, blocks in order? etc)
     - check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
-    - open output file (deleting existing one)
+    - malloc totale grootte (output_map)
     - schrijf elke blok uit volume 0 naar zelfde blok in output file
     - creeer 2 nieuwe volumeID blocken met nieue reserved_pebs en crc
     - vul resterende blokken op met default block (hardcoded values including crc)
         en 0xff als data fill
+    - open output file (deleting existing one
+    - write map to file
     - close output file
-*
+*/
+
+enum Mode { MODE_SHOW=0, MODE_FLASH };
+enum Mode mode = MODE_SHOW;
 
 int main(int argc, const char *argv[]) {
-    if (argc != 2) return -1;
+    const char* input_file = NULL;
+    const char* output_file = 0;
+    int num_blocks = 0;
 
-    int fd = open(argv[1], O_RDONLY);
+    switch (argc) {
+    case 2:
+        mode = MODE_SHOW;
+        input_file = argv[1];
+        break;
+    case 4:
+        mode = MODE_FLASH;
+        input_file = argv[1];
+        num_blocks = atoi(argv[2]);
+        output_file = argv[3];
+        break;
+    default:
+        printf("Usage %s [input_file] <numblocks> <output_file>\n", argv[0]);
+        return -1;
+    }
+
+    int fd = open(input_file, O_RDONLY);
     if (fd == -1) {
         perror("open");
         return -1;
@@ -41,16 +68,15 @@ int main(int argc, const char *argv[]) {
     int size = statbuf.st_size;
     int prot = PROT_READ | PROT_WRITE;
     int flags = MAP_PRIVATE;
-    void* map = mmap(NULL, size, prot, flags, fd, 0);
-    if (map == (void*)-1) {
+    void* input_map = mmap(NULL, size, prot, flags, fd, 0);
+    if (input_map == (void*)-1) {
         perror("mmap");
         return -1;
     }
     close(fd);
 
-    int blocksize = 128*1024;
 
-    unsigned char* base = map;
+    unsigned char* base = input_map;
     int offset = 0;
     int index = 0;
     int vid_count = 0;
@@ -97,14 +123,14 @@ int main(int argc, const char *argv[]) {
             }
         }
 
-        offset += blocksize;
+        offset += BLOCKSIZE;
         index++;
     }
     printf("%d PEBs,  %d VIDs  %d VTBLs\n", index, vid_count, vtbl_count);
     printf("SIZEOF ec_hdr=%d  vid_hdr=%d  vtbl=%d\n",
         sizeof(struct ubi_ec_hdr), sizeof(struct ubi_vid_hdr), sizeof(struct ubi_vtbl_record));
 
-    munmap(map, size);
+    munmap(input_map, size);
     return 0;
 }
 
