@@ -21,6 +21,7 @@
 
 // TODO change to write-once for flash? -> just do in memory for now.
 
+#if 0
 static void print_line(unsigned char* buffer,  int offset, int num) {
     static char hexval[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
     unsigned char line[80];
@@ -52,8 +53,7 @@ void print_memory(const char* name, unsigned char* start, int size) {
     printf("%9s:\n", name);
     print_buffer(start, size);
 }
-
-
+#endif
 
 // from uboot: drivers/mtd/ubi/crc32.c
 #define CRCPOLY_LE 0xedb88320
