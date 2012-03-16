@@ -196,13 +196,14 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
                 void* output_ptr = output_map + (output_index * BLOCKSIZE);
                 memcpy(output_ptr, input_ptr, BLOCKSIZE);
                 ec_hdr->ec = __cpu_to_be64(1);
-                // recalc ec hdr_crc
+                // recalc ec_hdr crc
                 unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
                 ec_hdr->hdr_crc = __cpu_to_be32(crc);
                 vtbl->reserved_pebs = __cpu_to_be32(num_blocks - RESERVED_BLOCKS);
                 vtbl->flags = 0;    // remove AUTORESIZE_FLG
-                vtbl->crc = __cpu_to_be32(0xDEADBEEF);
-                // TODO recalc vtbl crc
+                // recalc vtbl hdr crc
+                crc = crc32(UBI_CRC32_INIT, vtbl, UBI_VTBL_RECORD_SIZE_CRC);
+                vtbl->crc = __cpu_to_be32(crc);
                 // copy block to output
                 memcpy(output_ptr, input_ptr, BLOCKSIZE);
                 output_index++;
