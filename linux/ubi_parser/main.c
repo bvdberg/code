@@ -82,6 +82,40 @@ struct ubi_info {
 };
 
 
+static int check_image(void* input_map, int size, struct ubi_info* info) {
+    unsigned char* base = input_map;
+    int offset = 0;
+    int index = 0;
+    int vid_count = 0;
+    int vtbl_count = 0;
+    while (offset < size) {
+        struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)(base + offset);
+        if (ntohl(ec_hdr->magic) != UBI_EC_HDR_MAGIC) {
+            printf("[%03d] [%08d] invalid magic\n", index, offset);
+            return 1;
+        }
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&ec_hdr[1];
+        if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
+            vid_count++;
+            if (ntohl(vid_hdr->vol_id) == UBI_LAYOUT_VOLUME_ID) vtbl_count++;
+        }
+
+        offset += BLOCKSIZE;
+        index++;
+    }
+    if (size != BLOCKSIZE * index) {
+        printf("Invalid size, expected %d, got %d\n", BLOCKSIZE * index, size);
+        return 1;
+    }
+    if (info) {
+        info->num_erase_blocks = index;
+        info->num_data_blocks = vid_count - vtbl_count;
+        info->num_volume_blocks = vtbl_count;
+    }
+    return 0;
+}
+
+
 static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
     unsigned char* base = input_map;
     int offset = 0;
@@ -252,7 +286,7 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
 
 static void flash_ubi(void* input_map, int size, const char* output_file, int num_blocks) {
     struct ubi_info info;
-    int err = parse_ubi(input_map, size, &info);
+    int err = check_image(input_map, size, &info);
     if (err) return;
     printf("INFO: %d blocks [%d data, %d vol]\n", info.num_erase_blocks, info.num_data_blocks, info.num_volume_blocks);
     // Q: check for empty blocks?
@@ -348,6 +382,7 @@ int main(int argc, const char *argv[]) {
 
     switch (mode) {
     case MODE_SHOW:
+        if (check_image(input_map, size, NULL)) break;
         parse_ubi(input_map, size, NULL);
         break;
     case MODE_FLASH:
