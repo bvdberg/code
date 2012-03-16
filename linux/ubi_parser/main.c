@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,12 +12,49 @@
 
 #include "ubi-media.h"
 
+/*
+    Q: set ec = 1 voor data blocks, only recalc ec_hdr crc
+*/
+
 #define BLOCKSIZE 128*1024
 #define PAGE_SIZE 4096
 // for volume_id blocks?
 #define RESERVED_BLOCKS 4
 
 #define be64_to_cpu(x) __swab64((x))
+
+static void print_line(unsigned char* buffer,  int offset, int num) {
+    static char hexval[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    unsigned char line[80];
+    memset(line, ' ', sizeof(line));
+    line[79] = 0;
+    int i;
+    unsigned char* hex_cp = &line[0];
+    unsigned char* char_cp = &line[16 * 3 + 4];
+    for (i=0; i< num; i++) {
+        unsigned char input = buffer[offset + i];
+        *hex_cp++ = hexval[input >> 4];
+        *hex_cp++ = hexval[input & 0x0F];
+        hex_cp++;
+        *char_cp++ = (isprint(input) ? input : '.');
+    }
+    printf("%s\n", line);
+}
+
+static void print_buffer(unsigned char* buffer, int buffer_len) {
+    int offset = 0;
+    while (offset < buffer_len) {
+        int remaining = buffer_len - offset;
+        print_line(buffer, offset, (remaining >= 16) ? 16 : remaining);
+        offset += 16;
+    }
+}
+
+void print_memory(const char* name, unsigned char* start, int size) {
+    printf("%9s:\n", name);
+    print_buffer(start, size);
+}
+
 
 
 // from uboot: drivers/mtd/ubi/crc32.c
@@ -35,23 +73,6 @@ u32 crc32_le(u32 crc, unsigned char const *p, size_t len)
 
 #define crc32(seed, data, length)  crc32_le(seed, (unsigned char const *)data, length)
 
-
-/*
-    + flashing to file: args: input file, num_blocks, output_file
-    + check input file for correctness
-        -> check if size multiple of num_blocks
-    + also check types (dynamic not static, etc) -> SKIP
-    + check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
-    + malloc totale grootte + init to zero (output_map)
-    Q: set ec = 1? voor data blocks
-    - schrijf elke blok uit volume 0 naar zelfde blok in output file
-    - creeer 2 nieuwe volumeID blocken met nieue reserved_pebs en crc
-    - vul resterende blokken op met default block (hardcoded values including crc)
-        en 0xff als data fill
-    - open output file (deleting existing one
-    - write map to file
-    - close output file
-*/
 
 enum Mode { MODE_SHOW=0, MODE_FLASH };
 enum Mode mode = MODE_SHOW;
@@ -80,6 +101,9 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
         unsigned int data = ntohl(hdr->data_offset);
         unsigned int crc = ntohl(hdr->hdr_crc);
         printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x  ec=%ld\n", index, offset, vid, data, crc, ec);
+        unsigned int crc2 = crc32(UBI_CRC32_INIT, hdr, UBI_EC_HDR_SIZE_CRC);
+        printf("CALCULATED CRC 0x%08x\n", crc2);
+        //print_memory("name", (unsigned char*)hdr, UBI_EC_HDR_SIZE_CRC);
 
         struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
@@ -168,10 +192,11 @@ static void mark_empty_blocks(void* output_map, int output_index, int num_blocks
     memset(&ec_hdr, 0, sizeof(struct ubi_ec_hdr));
     ec_hdr.magic = __cpu_to_be32(UBI_EC_HDR_MAGIC);
     ec_hdr.version = UBI_VERSION;
-    ec_hdr.ec = __cpu_to_be64(3); // to match crc
+    ec_hdr.ec = __cpu_to_be64(1);
     ec_hdr.vid_hdr_offset = __cpu_to_be32(64);
     ec_hdr.data_offset = __cpu_to_be32(128);
-    ec_hdr.hdr_crc = __cpu_to_be32(0xf55dc15a); // matches settings above
+    unsigned int crc = crc32(UBI_CRC32_INIT, &ec_hdr, UBI_EC_HDR_SIZE_CRC);
+    ec_hdr.hdr_crc = __cpu_to_be32(crc);
 
     while (output_index < num_blocks) {
         printf("creating empty block %d\n", output_index);
