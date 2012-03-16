@@ -85,14 +85,15 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
             unsigned int vol_id = ntohl(vid_hdr->vol_id);
             unsigned int lnum = ntohl(vid_hdr->lnum);
+            unsigned int leb_ver = ntohl(vid_hdr->leb_ver);
             unsigned int datasize = ntohl(vid_hdr->data_size);
             unsigned int used_ebs = ntohl(vid_hdr->used_ebs);
             unsigned int data_pad = ntohl(vid_hdr->data_pad);
             unsigned int data_crc = ntohl(vid_hdr->data_crc);
             unsigned int sqnum = ntohl(vid_hdr->sqnum);
             unsigned int hdr_crc2 = ntohl(vid_hdr->hdr_crc);
-            printf("  VID_HDR:  type=%d  copy=%d  vol_id=0x%08x  lnum=%d  datasize=%d\n",
-                vid_hdr->vol_type, vid_hdr->copy_flag, vol_id, lnum, datasize);
+            printf("  VID_HDR:  version=%d  type=%d  copy=%d  compat=%d  vol_id=0x%08x  lnum=%d  lebver=%d  datasize=%d\n",
+                vid_hdr->version, vid_hdr->vol_type, vid_hdr->copy_flag, vid_hdr->compat, vol_id, lnum, leb_ver, datasize);
             printf("  used_ebs=%d  data_pad=%d  data_crc=0x%08x  sqnum=%d  hdr_crc=0x%08x\n",
                 used_ebs, data_pad, data_crc, sqnum, hdr_crc2);
             vid_count++;
@@ -194,14 +195,15 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
                 // copy block to output
                 void* input_ptr = (void*)(base + offset);
                 void* output_ptr = output_map + (output_index * BLOCKSIZE);
-                memcpy(output_ptr, input_ptr, BLOCKSIZE);
+
+                // update ec_hdr
                 ec_hdr->ec = __cpu_to_be64(1);
-                // recalc ec_hdr crc
                 unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
                 ec_hdr->hdr_crc = __cpu_to_be32(crc);
+
+                // update vtbl record
                 vtbl->reserved_pebs = __cpu_to_be32(num_blocks - RESERVED_BLOCKS);
                 vtbl->flags = 0;    // remove AUTORESIZE_FLG
-                // recalc vtbl hdr crc
                 crc = crc32(UBI_CRC32_INIT, vtbl, UBI_VTBL_RECORD_SIZE_CRC);
                 vtbl->crc = __cpu_to_be32(crc);
                 // copy block to output
