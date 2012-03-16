@@ -221,6 +221,43 @@ static int copy_volumes(void* input_map, int input_size, void* output_map) {
 }
 
 
+static int copy_volume_tables(void* input_map, int input_size, void* output_map, int output_index, int num_blocks) {
+    unsigned char* base = input_map;
+    int offset = 0;
+    int input_index = 0;
+    while (offset < input_size) {
+        struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)(base + offset);
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&ec_hdr[1];
+        if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
+            unsigned int vol_id = ntohl(vid_hdr->vol_id);
+            if (vol_id == UBI_LAYOUT_VOLUME_ID) {
+                struct ubi_vtbl_record* vtbl = (struct ubi_vtbl_record*)&vid_hdr[1];
+
+                // update ec_hdr
+                ec_hdr->ec = __cpu_to_be64(1);
+                unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
+                ec_hdr->hdr_crc = __cpu_to_be32(crc);
+
+                // update vtbl record
+                vtbl->reserved_pebs = __cpu_to_be32(num_blocks - RESERVED_BLOCKS);
+                vtbl->flags = 0;    // remove AUTORESIZE_FLG
+                crc = crc32(UBI_CRC32_INIT, vtbl, UBI_VTBL_RECORD_SIZE_CRC);
+                vtbl->crc = __cpu_to_be32(crc);
+                // copy block to output
+                void* input_ptr = (void*)(base + offset);
+                void* output_ptr = output_map + (output_index * BLOCKSIZE);
+                memcpy(output_ptr, input_ptr, BLOCKSIZE);
+                output_index++;
+            }
+        }
+
+        offset += BLOCKSIZE;
+        input_index++;
+    }
+    return output_index;
+}
+
+
 static void mark_empty_blocks(void* output_map, int output_index, int num_blocks) {
     printf("%s() start=%d   total=%d\n", __func__, output_index, num_blocks);
     
@@ -241,46 +278,6 @@ static void mark_empty_blocks(void* output_map, int output_index, int num_blocks
         memcpy(output_ptr, &ec_hdr, UBI_EC_HDR_SIZE);
         output_index++;
     }
-}
-
-
-static int copy_volume_tables(void* input_map, int input_size, void* output_map, int output_index, int num_blocks) {
-    unsigned char* base = input_map;
-    int offset = 0;
-    int input_index = 0;
-    while (offset < input_size) {
-        struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)(base + offset);
-        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&ec_hdr[1];
-        if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
-            unsigned int vol_id = ntohl(vid_hdr->vol_id);
-            if (vol_id == UBI_LAYOUT_VOLUME_ID) {
-                struct ubi_vtbl_record* vtbl = (struct ubi_vtbl_record*)&vid_hdr[1];
-                //unsigned int lnum = ntohl(vid_hdr->lnum);
-                // copy block to output
-                void* input_ptr = (void*)(base + offset);
-                void* output_ptr = output_map + (output_index * BLOCKSIZE);
-
-                // update ec_hdr
-                ec_hdr->ec = __cpu_to_be64(1);
-                unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
-                ec_hdr->hdr_crc = __cpu_to_be32(crc);
-
-                // update vtbl record
-                vtbl->reserved_pebs = __cpu_to_be32(num_blocks - RESERVED_BLOCKS);
-                vtbl->flags = 0;    // remove AUTORESIZE_FLG
-                crc = crc32(UBI_CRC32_INIT, vtbl, UBI_VTBL_RECORD_SIZE_CRC);
-                vtbl->crc = __cpu_to_be32(crc);
-                // copy block to output
-                memcpy(output_ptr, input_ptr, BLOCKSIZE);
-                output_index++;
-            }
-        }
-
-        offset += BLOCKSIZE;
-        input_index++;
-    }
-
-    return output_index;
 }
 
 
@@ -306,7 +303,6 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
     }
     // copy data volumes
     int output_index = copy_volumes(input_map, size, output_map);
-    printf("copied %d blocks\n", output_index);
 
     // copy volume table entries, and resize for output size, recalc crc, etc
     output_index = copy_volume_tables(input_map, size, output_map, output_index, num_blocks);
