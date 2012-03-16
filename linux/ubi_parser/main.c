@@ -162,6 +162,8 @@ static int copy_volumes(void* input_map, int input_size, void* output_map) {
 
 
 static void mark_empty_blocks(void* output_map, int output_index, int num_blocks) {
+    printf("%s() start=%d   total=%d\n", __func__, output_index, num_blocks);
+    
     struct ubi_ec_hdr ec_hdr;
     memset(&ec_hdr, 0, sizeof(struct ubi_ec_hdr));
     ec_hdr.magic = __cpu_to_be32(UBI_EC_HDR_MAGIC);
@@ -172,6 +174,7 @@ static void mark_empty_blocks(void* output_map, int output_index, int num_blocks
     ec_hdr.hdr_crc = __cpu_to_be32(0xf55dc15a); // matches settings above
 
     while (output_index < num_blocks) {
+        printf("creating empty block %d\n", output_index);
         void* output_ptr = output_map + (output_index * BLOCKSIZE);
         memset(output_ptr, 0xff, BLOCKSIZE);
         memcpy(output_ptr, &ec_hdr, UBI_EC_HDR_SIZE);
@@ -245,7 +248,7 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
     printf("copied %d blocks\n", output_index);
 
     // copy volume table entries, and resize for output size, recalc crc, etc
-    output_index += copy_volume_tables(input_map, size, output_map, output_index, num_blocks);
+    output_index = copy_volume_tables(input_map, size, output_map, output_index, num_blocks);
 
     // mark remaining blocks as empty
     mark_empty_blocks(output_map, output_index, num_blocks);
