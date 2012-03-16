@@ -18,6 +18,24 @@
 
 #define be64_to_cpu(x) __swab64((x))
 
+
+// from uboot: drivers/mtd/ubi/crc32.c
+#define CRCPOLY_LE 0xedb88320
+#define u32 unsigned int
+u32 crc32_le(u32 crc, unsigned char const *p, size_t len)
+{
+    int i;
+    while (len--) {
+        crc ^= *p++;
+        for (i = 0; i < 8; i++)
+            crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
+    }
+    return crc;
+}
+
+#define crc32(seed, data, length)  crc32_le(seed, (unsigned char const *)data, length)
+
+
 /*
     + flashing to file: args: input file, num_blocks, output_file
     + check input file for correctness
@@ -25,6 +43,7 @@
     + also check types (dynamic not static, etc) -> SKIP
     + check of aantal blocks genoeg is (reserveer 4 voor VOLUME_ID)
     + malloc totale grootte + init to zero (output_map)
+    Q: set ec = 1? voor data blocks
     - schrijf elke blok uit volume 0 naar zelfde blok in output file
     - creeer 2 nieuwe volumeID blocken met nieue reserved_pebs en crc
     - vul resterende blokken op met default block (hardcoded values including crc)
@@ -74,7 +93,7 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
             unsigned int hdr_crc2 = ntohl(vid_hdr->hdr_crc);
             printf("  VID_HDR:  type=%d  copy=%d  vol_id=0x%08x  lnum=%d  datasize=%d\n",
                 vid_hdr->vol_type, vid_hdr->copy_flag, vol_id, lnum, datasize);
-            printf("  used_ebs=%d  data_pad=%d  crc=0x%08x  sqnum=%d  hdr_crc=0x%08x\n",
+            printf("  used_ebs=%d  data_pad=%d  data_crc=0x%08x  sqnum=%d  hdr_crc=0x%08x\n",
                 used_ebs, data_pad, data_crc, sqnum, hdr_crc2);
             vid_count++;
 
@@ -85,7 +104,7 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
                 unsigned int data_pad = ntohl(vtbl->data_pad);
                 unsigned int name_len = ntohs(vtbl->name_len);
                 unsigned int crc = ntohl(vtbl->crc);
-                printf("    VOLUME_ID: res_peds=%d  align=%d  data_pad=%d  type=%d  marker=%d\n",
+                printf("    VOLUME_TBL: res_peds=%d  align=%d  data_pad=%d  type=%d  marker=%d\n",
                     res_pebs, alignment, data_pad, vtbl->vol_type, vtbl->upd_marker);
                 printf("    len=%d  name=%s  flags=%d  crc=0x%08x\n", name_len, vtbl->name, vtbl->flags, crc);
                 vtbl_count++;
@@ -111,7 +130,7 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
 }
 
 
-static int copy_volume(void* input_map, int input_size, void* output_map, unsigned int volumeID) {
+static int copy_volumes(void* input_map, int input_size, void* output_map) {
     int output_index = 0;
 
     unsigned char* base = input_map;
@@ -122,9 +141,10 @@ static int copy_volume(void* input_map, int input_size, void* output_map, unsign
         struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
             unsigned int vol_id = ntohl(vid_hdr->vol_id);
-            if (vol_id == volumeID) {
+            if (vol_id < UBI_LAYOUT_VOLUME_ID ) {
                 unsigned int lnum = ntohl(vid_hdr->lnum);
                 // copy block to output
+                // TODO set ec to 1 and recalc CRC's?
                 void* input_ptr = (void*)(base + offset);
                 void* output_ptr = output_map + (output_index * BLOCKSIZE);
                 printf("copying block %d to block %d,  index %d  0x%08x -> 0x%08x\n", input_index, output_index, lnum, (unsigned int)input_ptr, (unsigned int)output_ptr);
@@ -164,20 +184,27 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
     int offset = 0;
     int input_index = 0;
     while (offset < input_size) {
-        struct ubi_ec_hdr* hdr = (struct ubi_ec_hdr*)(base + offset);
-        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
+        struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)(base + offset);
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&ec_hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
             unsigned int vol_id = ntohl(vid_hdr->vol_id);
             if (vol_id == UBI_LAYOUT_VOLUME_ID) {
                 struct ubi_vtbl_record* vtbl = (struct ubi_vtbl_record*)&vid_hdr[1];
-                unsigned int res_pebs = ntohl(vtbl->reserved_pebs);
                 //unsigned int lnum = ntohl(vid_hdr->lnum);
                 // copy block to output
                 void* input_ptr = (void*)(base + offset);
                 void* output_ptr = output_map + (output_index * BLOCKSIZE);
                 memcpy(output_ptr, input_ptr, BLOCKSIZE);
-                // TODO modify size and recalc checksum
-                vtbl->res_pebs = ..
+                ec_hdr->ec = __cpu_to_be64(1);
+                // recalc ec hdr_crc
+                unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
+                ec_hdr->hdr_crc = __cpu_to_be32(crc);
+                vtbl->reserved_pebs = __cpu_to_be32(num_blocks - RESERVED_BLOCKS);
+                vtbl->flags = 0;    // remove AUTORESIZE_FLG
+                vtbl->crc = __cpu_to_be32(0xDEADBEEF);
+                // TODO recalc vtbl crc
+                // copy block to output
+                memcpy(output_ptr, input_ptr, BLOCKSIZE);
                 output_index++;
             }
         }
@@ -210,8 +237,8 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
         perror("calloc");
         return;
     }
-    // write Volume0 blocks to output_map
-    int output_index = copy_volume(input_map, size, output_map, 0);
+    // copy data volumes
+    int output_index = copy_volumes(input_map, size, output_map);
     printf("copied %d blocks\n", output_index);
 
     // copy volume table entries, and resize for output size, recalc crc, etc
