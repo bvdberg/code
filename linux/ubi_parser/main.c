@@ -12,16 +12,14 @@
 
 #include "ubi-media.h"
 
-/*
-    Q: set ec = 1 voor data blocks, only recalc ec_hdr crc
-*/
-
 #define BLOCKSIZE 128*1024
 #define PAGE_SIZE 4096
 // for volume_id blocks?
 #define RESERVED_BLOCKS 4
 
 #define be64_to_cpu(x) __swab64((x))
+
+// TODO change to write-once for flash? -> just do in memory for now.
 
 static void print_line(unsigned char* buffer,  int offset, int num) {
     static char hexval[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -162,14 +160,18 @@ static int copy_volumes(void* input_map, int input_size, void* output_map) {
     int offset = 0;
     int input_index = 0;
     while (offset < input_size) {
-        struct ubi_ec_hdr* hdr = (struct ubi_ec_hdr*)(base + offset);
-        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
+        struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)(base + offset);
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&ec_hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
             unsigned int vol_id = ntohl(vid_hdr->vol_id);
             if (vol_id < UBI_LAYOUT_VOLUME_ID ) {
                 unsigned int lnum = ntohl(vid_hdr->lnum);
+                // set ec to 1
+                ec_hdr->ec = __cpu_to_be64(1);
+                unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
+                ec_hdr->hdr_crc = __cpu_to_be32(crc);
+
                 // copy block to output
-                // TODO set ec to 1 and recalc CRC's?
                 void* input_ptr = (void*)(base + offset);
                 void* output_ptr = output_map + (output_index * BLOCKSIZE);
                 printf("copying block %d to block %d,  index %d  0x%08x -> 0x%08x\n", input_index, output_index, lnum, (unsigned int)input_ptr, (unsigned int)output_ptr);
