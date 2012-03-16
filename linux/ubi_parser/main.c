@@ -134,8 +134,6 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
         unsigned int crc = ntohl(hdr->hdr_crc);
         printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x  ec=%ld\n", index, offset, vid, data, crc, ec);
         unsigned int crc2 = crc32(UBI_CRC32_INIT, hdr, UBI_EC_HDR_SIZE_CRC);
-        printf("CALCULATED CRC 0x%08x\n", crc2);
-        //print_memory("name", (unsigned char*)hdr, UBI_EC_HDR_SIZE_CRC);
 
         struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
@@ -259,25 +257,25 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
 
 
 static void mark_empty_blocks(void* output_map, int output_index, int num_blocks) {
-    printf("%s() start=%d   total=%d\n", __func__, output_index, num_blocks);
-    
-    struct ubi_ec_hdr ec_hdr;
-    memset(&ec_hdr, 0, sizeof(struct ubi_ec_hdr));
-    ec_hdr.magic = __cpu_to_be32(UBI_EC_HDR_MAGIC);
-    ec_hdr.version = UBI_VERSION;
-    ec_hdr.ec = __cpu_to_be64(1);
-    ec_hdr.vid_hdr_offset = __cpu_to_be32(64);
-    ec_hdr.data_offset = __cpu_to_be32(128);
-    unsigned int crc = crc32(UBI_CRC32_INIT, &ec_hdr, UBI_EC_HDR_SIZE_CRC);
-    ec_hdr.hdr_crc = __cpu_to_be32(crc);
+    unsigned char* block = (unsigned char*)malloc(BLOCKSIZE);
+    struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)block;
+    memset(block, 0xff, BLOCKSIZE);
+    memset(ec_hdr, 0, sizeof(struct ubi_ec_hdr));
+    ec_hdr->magic = __cpu_to_be32(UBI_EC_HDR_MAGIC);
+    ec_hdr->version = UBI_VERSION;
+    ec_hdr->ec = __cpu_to_be64(1);
+    ec_hdr->vid_hdr_offset = __cpu_to_be32(64);
+    ec_hdr->data_offset = __cpu_to_be32(128);
+    unsigned int crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
+    ec_hdr->hdr_crc = __cpu_to_be32(crc);
 
     while (output_index < num_blocks) {
         printf("creating empty block %d\n", output_index);
         void* output_ptr = output_map + (output_index * BLOCKSIZE);
-        memset(output_ptr, 0xff, BLOCKSIZE);
-        memcpy(output_ptr, &ec_hdr, UBI_EC_HDR_SIZE);
+        memcpy(output_ptr, block, BLOCKSIZE);
         output_index++;
     }
+    free(block);
 }
 
 
