@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 static const char* menu  = 
 "Thales HPP_Audio,                                                                     \n"
@@ -35,18 +36,35 @@ static void menu_setvalue(const char* input, int pos, int len) {
     }
 }
 
+
+static void menu_print(int pos, int len, const char *fmt, ...)
+{
+    va_list args;
+    char printbuffer[40];
+    memset(printbuffer, 0, sizeof(printbuffer));
+    va_start(args, fmt);
+    vsprintf(printbuffer, fmt, args);
+    va_end(args);
+    
+    menu_setvalue(printbuffer, pos, len);
+} 
+
+
+static void menu_init() {
+    strcpy(menu_copy, menu);
+#ifdef DEBUG
+    menu_setvalue("DEBUG inits :", OFFSET(0, 65), 20); // debug
+#endif
+}
+
 int main(int argc, const char *argv[])
 {
-    int debug = (argc > 1);
-    printf("strlen = %d\n", strlen(menu));
-    printf("%s\n", menu);
-    strcpy(menu_copy, menu);
+    menu_init();
     // top bar
     menu_setvalue("NO McASP", OFFSET(0, 18), 8);    // McASP
-    if (debug) {
-        menu_setvalue("DEBUG inits : 0", OFFSET(0, 65), 20); // debug
+#ifdef DEBUG
         menu_setvalue("1025", OFFSET(0, 79), 6); // inits
-    }
+#endif
     // audio input
     menu_setvalue("E1",  OFFSET(2, COL1), 2);       // input reg
     menu_setvalue("off", OFFSET(4, COL1), 3);       // loopback
@@ -61,6 +79,7 @@ int main(int argc, const char *argv[])
     menu_setvalue("DC",  OFFSET(8, COL3), 2);   // coupling1
     menu_setvalue("AC",  OFFSET(9, COL3), 2);   // coupling2
 
+    menu_print(OFFSET(6, COL1), 3, "%3f", 3.1415);
 
     printf("%s\n", menu_copy);
 
