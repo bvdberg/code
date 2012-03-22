@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <string.h>
+
+static const char* menu  = 
+"Thales HPP_Audio, McASP                                        DEBUG   inits : 1024   \n"
+"----------------------------|----------------------------|----------------------------\n"
+" Audio Input Reg [i]  : P1  | Codec Registers            | Audio Output Reg[o]  : E2  \n"
+"----------------------------|----------------------------|----------------------------\n"
+" loopback 1+2    [l]  : OFF |                            | enable output1  [1]  : 1   \n"
+" input gain (dB) [g]  : 20  |                            | enable output2  [2]  : 0   \n"
+" bias current    [b]  : MED |                            | gain1 (dB)      [3]  : 18  \n"
+"                            |                            | gain2 (dB)      [4]  : 0   \n"
+"                            |                            | coupling1       [5]  : AC  \n"
+"                            |                            | coupling2       [6]  : DC  \n"
+"----------------------------|----------------------------|----------------------------\n";
+
+#define LINE 85
+#define POS_INPUT_REG (LINE*2 + 28)
+
+static char menu_copy[1024];
+
+// input string needs to be at least len long
+static void menu_setvalue(const char* input, int pos, int len) {
+    const char* ip = input;
+    char* op = menu_copy + pos;
+    while (len) {
+        *op++ = *ip++;
+        len--;
+    }
+}
+
+int main(int argc, const char *argv[])
+{
+    printf("strlen = %d\n", strlen(menu));
+    strcpy(menu_copy, menu);
+    // top bar
+    menu_setvalue("NO McASP", POS_INPUT_MCASP, 8);
+    // audio input
+    menu_setvalue("E1", POS_INPUT_REG, 2);
+    menu_setvalue(""
+
+
+    printf("%s\n", menu_copy);
+
+    return 0;
+}
+
