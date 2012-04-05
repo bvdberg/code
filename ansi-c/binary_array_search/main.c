@@ -21,7 +21,7 @@ static rtable_in rt_in[NR_RTABLE_IN];
 static unsigned int num_rt_in;
 
 // linear: total = 36190   avg = 361
-// binary: total = 22946   avg = 229
+// binary: total = 19162   avg = 191
 static int rtable_lookup(unsigned int port) {
 #if 0
     // linear search
@@ -33,19 +33,17 @@ static int rtable_lookup(unsigned int port) {
     // binary search
     unsigned int i = num_rt_in / 2;
     unsigned int lower = 0;
-    unsigned int upper = num_rt_in-1;
+    unsigned int upper = num_rt_in;
     while (upper != lower) {
         unsigned int p = rt_in[i].port;
         //printf("  lower=%d  upper=%d  i=%d  port=%d  p[i]=%d\n", lower, upper, i, port, p);
         if (p == port) return i;
         if (p < port) { // search right part
             lower = i;
-            i = (upper + 1 +lower)/2;
         } else {    // search left part
             upper = i;
-            i = (upper + lower)/2;
         }
-        //if (i == lower) i++;    // to find boundary
+        i = (upper + lower)/2;
     }
 #endif
     return -1;
@@ -70,10 +68,8 @@ static void rtable_add(unsigned int port, unsigned int chid) {
         printf("error, already have port %d\n", port);
         return; // TODO ERRDUP?
     }
-    //printf("adding %d -> pos %d  (num=%d)\n", port, i, num_rt_in);
     // move pos+1 - end
     for (j=num_rt_in; j>i; j--) {
-        //printf("  moving %d -> %d\n", j-1, j); 
         rtable_in* src = &rt_in[j-1];
         rtable_in* dst = &rt_in[j];
         dst->port = src->port;
@@ -100,7 +96,6 @@ static void rtable_del(unsigned int port, unsigned int chid) {
         printf("  del: port %d no matching chid\n", port);
         return;
     }
-    printf("  found port %d at pos %d\n", port, index);
     while ((unsigned int)index < (num_rt_in-1)) {
         printf("  moving %d -> %d\n", index+1, index);
         rtable_in* src = &rt_in[index+1];
@@ -128,7 +123,7 @@ static void rtable_print(void) {
 
 
 int debug_find(int port) {
-    //printf("looking for %d\n", port);
+    printf("looking for %d\n", port);
     int i = rtable_lookup(port);
     printf("find %d -> index %d\n", port, i);
     return i;
@@ -156,7 +151,11 @@ int main(int argc, const char *argv[])
     total += (t2 - t1);
     printf("total = %llu   avg = %llu\n", total, total / NR_RTABLE_IN);
 #else
+    debug_find(10);
     rtable_add(10, 1230);
+    rtable_add(20, 1230);
+    rtable_add(30, 1230);
+    debug_find(30);
     rtable_add(10, 1230);
     rtable_add(20, 1230);
     rtable_add(15, 1230);
