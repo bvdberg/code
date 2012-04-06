@@ -39,8 +39,10 @@ static int rtable_lookup(unsigned int port) {
         //printf("  lower=%d  upper=%d  i=%d  port=%d  p[i]=%d\n", lower, upper, i, port, p);
         if (p == port) return i;
         if (p < port) { // search right part
+            if (lower == i) return -1;
             lower = i;
         } else {    // search left part
+            if (upper == i) return -1;
             upper = i;
         }
         i = (upper + lower)/2;
