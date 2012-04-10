@@ -2,8 +2,6 @@
 
 void __attribute__ ((weak)) my_function();
 
-void my_function2();
-
 int main() {
     if (my_function) {
         printf("running my_function\n");
