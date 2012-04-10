@@ -23,6 +23,17 @@ void select_function(int num) {
 }
 
 
+static void foo(int a) {
+    int number = a;
+    void test() {
+        printf("%s() number=%d\n", __func__, number);
+        
+    }
+    test();
+    number *= 2;
+    test();
+}
+
 int main()
 {
     select_function(10);
@@ -32,6 +43,7 @@ int main()
         printf("%s() a=%d\n", __func__, a);
     }
     test(10);
+    foo(20);
 
     return 0;
 }
