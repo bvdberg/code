@@ -98,8 +98,10 @@ void sigint(int num) {
 
 int main(int argc, const char *argv[])
 {
-    int fd = open_socket(6666);
+    int portnum = 6666;
+    int fd = open_socket(portnum);
     if (fd == -1) return 0;
+    printf("opening socket on port %d\n", portnum);
 
     addConnection(fd, POLLIN);
     int timeout_ms = 500;
