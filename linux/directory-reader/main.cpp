@@ -5,6 +5,10 @@
 
 void printdir(const char* name) {
     DIR* dir = opendir(name);
+    if (dir == NULL) {
+        perror("opendir");
+        return;
+    }
     struct dirent* dir2 = readdir(dir);
     while (dir2 != 0) {
         printf("dtype = 0x%02x  name = %s\n", dir2->d_type, dir2->d_name);
