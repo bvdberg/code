@@ -41,7 +41,7 @@ void* producer(void* ptr)
         int amount = rand() % 5 + 1;
 
         if (numFree < amount) {
-            printf(ANSI_GREEN"producer: no free space left in queue...wating"ANSI_NORMAL"\n");
+            printf(ANSI_GREEN"producer: no free space left in queue...waiting"ANSI_NORMAL"\n");
         } else {
             buffer_add(buf, amount);
         }
@@ -61,7 +61,7 @@ void* consumer(void* ptr)
         int numData = buffer_data(buf);
         int amount = rand() % 5 + 1;
         if (amount > numData) {
-            printf(ANSI_RED"consumer: no data in queue...wating"ANSI_NORMAL"\n");
+            printf(ANSI_RED"consumer: no data in queue...waiting"ANSI_NORMAL"\n");
         } else {
             buffer_remove(buf, amount);
         }
