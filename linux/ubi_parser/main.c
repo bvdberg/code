@@ -133,7 +133,7 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
         unsigned int data = ntohl(hdr->data_offset);
         unsigned int crc = ntohl(hdr->hdr_crc);
         printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x  ec=%ld\n", index, offset, vid, data, crc, ec);
-        unsigned int crc2 = crc32(UBI_CRC32_INIT, hdr, UBI_EC_HDR_SIZE_CRC);
+        //unsigned int crc2 = crc32(UBI_CRC32_INIT, hdr, UBI_EC_HDR_SIZE_CRC);
 
         struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
@@ -256,7 +256,7 @@ static int copy_volume_tables(void* input_map, int input_size, void* output_map,
 }
 
 
-static void mark_empty_blocks(void* output_map, int output_index, int num_blocks) {
+static void mark_empty_blocks(int out_fd, int output_index, int num_blocks) {
     unsigned char* block = (unsigned char*)malloc(BLOCKSIZE);
     struct ubi_ec_hdr* ec_hdr = (struct ubi_ec_hdr*)block;
     memset(block, 0xff, BLOCKSIZE);
@@ -271,8 +271,13 @@ static void mark_empty_blocks(void* output_map, int output_index, int num_blocks
 
     while (output_index < num_blocks) {
         printf("creating empty block %d\n", output_index);
-        void* output_ptr = output_map + (output_index * BLOCKSIZE);
-        memcpy(output_ptr, block, BLOCKSIZE);
+        //void* output_ptr = output_map + (output_index * BLOCKSIZE);
+        //memcpy(output_ptr, block, BLOCKSIZE);
+        int written = write(out_fd, block, BLOCKSIZE);
+        if (written != BLOCKSIZE) {
+            perror("write");
+            exit(-1);
+        }
         output_index++;
     }
     free(block);
@@ -294,7 +299,7 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
 
     int output_size = num_blocks * BLOCKSIZE;
     printf("output file %s,  size %d\n", output_file, output_size);
-    void* output_map = calloc(num_blocks, BLOCKSIZE);
+    void* output_map = calloc(needed_blocks, BLOCKSIZE);
     if (output_map == NULL) {
         perror("calloc");
         return;
@@ -305,9 +310,6 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
     // copy volume table entries, and resize for output size, recalc crc, etc
     output_index = copy_volume_tables(input_map, size, output_map, output_index, num_blocks);
 
-    // mark remaining blocks as empty
-    mark_empty_blocks(output_map, output_index, num_blocks);
-
     // open output file
     int out_fd = open(output_file, O_WRONLY | O_TRUNC | O_CREAT, 0660);
     if (out_fd == -1) {
@@ -316,7 +318,7 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
     }
 
     // write output_map to output_file
-    int pages = output_size / PAGE_SIZE;
+    int pages = needed_blocks * BLOCKSIZE / PAGE_SIZE;
     int i;
     for (i=0; i<pages; i++) {
         int written = write(out_fd, output_map + i * PAGE_SIZE, PAGE_SIZE);
@@ -325,6 +327,9 @@ static void flash_ubi(void* input_map, int size, const char* output_file, int nu
             break;
         }
     }
+    // mark remaining blocks as empty
+    mark_empty_blocks(out_fd, output_index, num_blocks);
+
     close (out_fd);
 out:
     free (output_map);
