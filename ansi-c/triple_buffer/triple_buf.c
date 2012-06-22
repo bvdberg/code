@@ -5,89 +5,108 @@
 #include "triple_buf.h"
 
 void buffer_init(Buffer* buf) {
-    buf->size = BUF_SIZE;
-    buf->putIndex = 0;
-    buf->takeIndex = 0;
-    memset(buf->data, 0, BUF_SIZE);
+    int i;
+    for (i=0; i<BUF_SIZE; i++) buf->data[i] = EMPTY;
 }
-
-
-unsigned int buffer_data(Buffer* buf) {
-    if (buf->putIndex == buf->takeIndex) return 0;
-    if (buf->putIndex > buf->takeIndex) { // no wraparound
-        return buf->putIndex - buf->takeIndex;
-    } else { // wraparound
-        return (buf->size - buf->takeIndex) + buf->putIndex;
-    }
-}
-
-
-unsigned int buffer_free(Buffer* buf) {
-    if (buf->putIndex == buf->takeIndex) {  // empty buffer
-        return buf->size - 1;
-    }
-    if (buf->putIndex > buf->takeIndex) { // no data wraparound
-        return buf->size -1 - (buf->putIndex - buf->takeIndex);
-    } else { // wraparound
-        return buf->takeIndex - buf->putIndex -1;
-    }
-}
-
-
-void buffer_add(Buffer* buf, int amount) {
-    if (buffer_free(buf) < amount) {
-        printf("ERROR not enough space\n");
-        exit(-1);
-    }
-    int beforeWrap = buf->size - buf->putIndex;
-    if (beforeWrap >= amount) { // no wraparound
-        buf->putIndex += amount;
-    } else {
-        buf->putIndex += amount; 
-        buf->putIndex = buf->putIndex % buf->size;
-    }
-}
-
-
-void buffer_remove(Buffer* buf, int amount) {
-    if (buffer_data(buf) < amount) {
-        printf("ERROR not enough data\n");
-        exit(-1);
-    }
-    int offset = buf->putIndex - buf->takeIndex;
-    if (offset > 0) { // no wraparound
-        buf->takeIndex += amount;
-    } else {
-        buf->takeIndex += amount;
-        buf->takeIndex = buf->takeIndex % buf->size;
-    }
-}
-
 
 void buffer_print(Buffer* buf) {
+    char output[32];
+    char* cp = output;
     int i;
-    printf("P=%2d  T=%2d  F=%2d D=%2d: ", buf->putIndex, buf->takeIndex, buffer_free(buf), buffer_data(buf));
-    printf("Buffer [");
-    if (buf->putIndex >= buf->takeIndex) {   // no wraparound
-        for (i=0; i<buf->size; i++) {
-            if (i < buf->takeIndex) printf("_");
-            else if (i >= buf->putIndex) printf("_");
-            else printf("D");
-            if (i%5 == 4 && i!=buf->size-1) printf(".");
+    *cp++ = '[';
+    for (i=0; i<BUF_SIZE; i++) {
+        char tmp = '_';
+        switch (buf->data[i]) {
+        case EMPTY:
+            tmp = '_';
+            break;
+        case FULL:
+            tmp = '+';
+            break;
+        case BUSY_READING:
+            tmp = 'R';
+            break;
+        case BUSY_WRITING:
+            tmp = 'W';
+            break;
         }
-    } else {
-        for (i=0; i<buf->size; i++) {
-            if (i < buf->putIndex) printf("D");
-            else if (i < buf->takeIndex) printf("_");
-            else printf("D");
-            if (i%5 == 4 && i!=buf->size-1) printf(".");
+        *cp++ = tmp;
+    }
+    *cp++ =']';
+    *cp = 0;
+    puts(output);
+#if 0
+    for (i=0; i<BUF_SIZE; i++) {
+        switch (buf->data[i]) {
+        case EMPTY:
+            printf("buffer[%d] = empty\n", i);
+            break;
+        case FULL:
+            printf("buffer[%d] = full\n", i);
+            break;
+        case BUSY_READING:
+            printf("buffer[%d] = busy_reading\n", i);
+            break;
+        case BUSY_WRITING:
+            printf("buffer[%d] = busy_writing\n", i);
+            break;
         }
     }
-    printf("]    [");
-    for (i=0; i<buf->size; i++) {
-        if (i<buffer_data(buf)) printf("D");
-        else printf("_");
+#endif
+}
+
+int read_start(Buffer* buf) {
+    // find slot with state 'FULL' otherwise return -1
+    int i;
+    for (i=0; i<BUF_SIZE; i++) {
+        if (buf->data[i] == FULL) {
+            buf->data[i] = BUSY_READING;
+            return i;
+        }
     }
-    printf("]\n");
+    return -1;
+}
+
+void read_done(Buffer* buf) {
+    // find slot with state 'BUSY_READING' and set state to EMPTY
+    int i;
+    for (i=0; i<BUF_SIZE; i++) {
+        if (buf->data[i] == BUSY_READING) {
+            buf->data[i] = EMPTY;
+            return;
+        }
+    }
+    // error
+}
+
+int write_start(Buffer* buf) {
+    // find slot with state 'EMPTY' otherwise return -1
+    int i;
+    for (i=0; i<BUF_SIZE; i++) {
+        if (buf->data[i] == EMPTY) {
+            buf->data[i] = BUSY_WRITING;
+            return i;
+        }
+    }
+    // otherwise find old FULL buffer
+    for (i=0; i<BUF_SIZE; i++) {
+        if (buf->data[i] == FULL) {
+            buf->data[i] = BUSY_WRITING;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void write_done(Buffer* buf) {
+    // find slot with state 'BUSY_WRITING' and set state to FULL
+    int i;
+    for (i=0; i<BUF_SIZE; i++) {
+        if (buf->data[i] == BUSY_WRITING) {
+            buf->data[i] = FULL;
+            return;
+        }
+    }
+    // error
 }
 
