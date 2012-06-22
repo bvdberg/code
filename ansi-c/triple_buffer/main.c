@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
-#include "circbuf.h"
+#include "triple_buf.h"
 
 #define ANSI_BLACK "\033[22;30m"
 #define ANSI_RED "\033[22;31m"

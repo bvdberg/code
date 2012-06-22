@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "circbuf.h"
+#include "triple_buf.h"
 
 void buffer_init(Buffer* buf) {
     buf->size = BUF_SIZE;
