@@ -35,24 +35,6 @@ void buffer_print(Buffer* buf) {
     *cp++ =']';
     *cp = 0;
     puts(output);
-#if 0
-    for (i=0; i<BUF_SIZE; i++) {
-        switch (buf->data[i]) {
-        case EMPTY:
-            printf("buffer[%d] = empty\n", i);
-            break;
-        case FULL:
-            printf("buffer[%d] = full\n", i);
-            break;
-        case BUSY_READING:
-            printf("buffer[%d] = busy_reading\n", i);
-            break;
-        case BUSY_WRITING:
-            printf("buffer[%d] = busy_writing\n", i);
-            break;
-        }
-    }
-#endif
 }
 
 int read_start(Buffer* buf) {
