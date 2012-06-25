@@ -8,10 +8,7 @@
     * single producer and single consumer
     * especially handy if producer/consumer run at different or nearly same speeds
 
-    -> void read_start();
-    -> int number = read_done();
-    -> void write_start();
-    -> write_done(int number);
+    TODO: read last written. Write should use least-recently written when overwriting
 */
 
 #define BUF_SIZE 3
