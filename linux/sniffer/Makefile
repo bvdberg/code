@@ -1,9 +1,9 @@
 #CC=gcc
 CC=arm-none-linux-gnueabi-gcc
 
-test: main.c
-	$(CC) -Wall main.c -o test
+sniffer: main.c
+	$(CC) -Wall main.c -o sniffer
 
 clean:
-	rm -f test
+	rm -f sniffer
 
