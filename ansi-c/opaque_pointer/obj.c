@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "obj.h"
  
@@ -28,3 +29,8 @@ int obj_getid(struct obj *o, int *i) {
     return 0;
 }
 
+struct obj* obj_create(int id) {
+    struct obj* o = (struct obj*)malloc(sizeof(struct obj));
+    obj_setid(o, id);
+    return o;
+}

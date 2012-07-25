@@ -16,5 +16,7 @@ int obj_setid(struct obj *, int);
  
 int obj_getid(struct obj *, int *);
 
+struct obj* obj_create(int);
+
 #endif
 
