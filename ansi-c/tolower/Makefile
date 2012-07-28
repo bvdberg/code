@@ -1,2 +1,2 @@
 all:
-	gcc main.c -o test
+	gcc main.c -o test -Wall -Wextra
