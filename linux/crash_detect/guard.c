@@ -13,10 +13,27 @@
 #include <stdlib.h>
 
 
-struct child_t {
+typedef struct {
     pid_t pid;
     char executable[64];
-};
+} Child;
+
+static Child start_app(const char* prog) {
+    Child child;
+    strncpy(child.executable, prog, 63);
+    pid_t child_pid = fork();
+    if (child_pid == 0) { //child
+        usleep(50000);
+        //execvp(argv[1], NULL);
+        execlp(prog, prog, (char*)NULL);
+        printf("guard: error starting %s\n", prog);
+        child.pid = 0;
+    } else {   //parent
+        printf("guard: started [%s] - pid %d\n", prog, child_pid);
+        child.pid = child_pid;
+    }
+    return child;
+}
 
 
 int main(int argc, char *argv[])
@@ -27,40 +44,19 @@ int main(int argc, char *argv[])
     }
 
     //phase 1 - start child process
-    struct child_t child;
-    pid_t child_pid = fork();
-    if (child_pid == 0) { //child
-        usleep(50000);
-        execvp(argv[1], NULL);
-        printf("guard: error starting %s\n", argv[1]);
-        return -1;
-    } else {   //parent
-        printf("guard: started [%s] - pid %d\n", argv[1], child_pid);
-        child.pid = child_pid;
-        strncpy(child.executable, argv[1], 63);
-    }
+    Child child = start_app(argv[1]);
 
     int count = 0;
     while (count < 4) {
         //phase 2 - wait until first one terminates
         int status = 0;
-        child_pid = waitpid(child_pid, &status, 0);
+        pid_t child_pid = waitpid(child.pid, &status, 0);
 
         count++;
         if (!WIFEXITED(status)) { //child exits abnormally
             if (child.pid == child_pid) {
                 printf("guard: process [%s] (pid %d) crashed!\n", child.executable, child.pid);
-                child.pid = 0;
-                //restart after crash
-                child_pid = fork();
-                if (child_pid == 0) { //child
-                    execvp(child.executable, NULL);
-                    printf("guard: error starting %s\n", child.executable);
-                    break;
-                } else {   //parent
-                    printf("guard: restarted [%s] - pid %d\n", child.executable, child_pid);
-                    child.pid = child_pid;
-                }
+                child = start_app(argv[1]);
             }
             // else weird
         } else {
