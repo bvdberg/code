@@ -1,6 +1,6 @@
 CFLAGS=-Wall -Wextra -Wno-unused -O3
 
-test: main.cpp
+test: main.cpp OwningVector.h
 	g++ $(CFLAGS) main.cpp -o test
 
 clean:
