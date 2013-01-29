@@ -26,6 +26,7 @@ private:
 };
 
 
+template <typename T>
 class OwningVector {
 public:
     OwningVector(int initial = 32)
@@ -33,7 +34,7 @@ public:
         , m_size(0)
     {
         printf("creating vector %p\n", this);
-        m_data = (Statement**)malloc(sizeof(Statement*)*m_capacity);
+        m_data = (T**)malloc(sizeof(T*)*m_capacity);
     }
     OwningVector(OwningVector& rhs)
         : m_capacity(rhs.m_capacity)
@@ -53,16 +54,17 @@ public:
             free(m_data);
         }
     }
-    Statement* operator[] (int index) {
+    T* operator[] (int index) {
         assert(index < m_size);
         return m_data[index];
     }
-    void push_back(Statement* s) {
+    void push_back(T* s) {
         if (m_size == m_capacity) {
             if (m_capacity == 0) m_capacity = 4;
             else m_capacity *= 2;
-            Statement** data2 = (Statement**)malloc(sizeof(Statement*)*m_capacity);
-            memcpy(data2, m_data, m_size*sizeof(Statement*));
+            T** data2 = (T**)malloc(sizeof(T*)*m_capacity);
+            memcpy(data2, m_data, m_size*sizeof(T*));
+            // data = data2
         }
         m_data[m_size] = s;
         m_size++;
@@ -72,29 +74,30 @@ public:
 private:
     int m_capacity;
     int m_size;
-    Statement** m_data;
+    T** m_data;
 };
 
+typedef OwningVector<Statement> StmtList;
 
 // no ownership change
-void no_ownership(OwningVector& v) {
+void no_ownership(StmtList& v) {
     printf("no ownership() %p\n", &v);
 }
 
-void pass_ownership(OwningVector v) {
+void pass_ownership(StmtList v) {
     printf("pass ownership() %p\n", &v);
 }
 
 class Keeper {
 public:
-    Keeper(OwningVector& v_) : v(v_) {}
+    Keeper(StmtList& v_) : v(v_) {}
 private:
-    OwningVector v;
+    StmtList v;
 };
 
 int main(int argc, const char *argv[])
 {
-    OwningVector stmts;    
+    StmtList stmts;    
     stmts.push_back(new Statement("break"));
     stmts.push_back(new Statement("for"));
     stmts.push_back(new Statement("printf"));
@@ -105,7 +108,7 @@ int main(int argc, const char *argv[])
 
     Keeper* k;
     {
-        OwningVector s2;    
+        StmtList s2;    
         s2.push_back(new Statement("11"));
         s2.push_back(new Statement("22"));
         s2.push_back(new Statement("33"));

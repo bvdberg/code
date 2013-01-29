@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -Wno-unused
+CFLAGS=-Wall -Wextra -Wno-unused -O3
 
 test: main.cpp
 	g++ $(CFLAGS) main.cpp -o test
