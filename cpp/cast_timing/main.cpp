@@ -90,7 +90,12 @@ int main(int argc, const char *argv[])
     printf("reinterpret cast diff = %llu\n", two - one);
 
     one = rdtsc();
-    Derived1* d1c = Caster<Derived1>::get(b1);
+    Derived1* d1c = static_cast<Derived1*>(b1);
+    two = rdtsc();
+    printf("static cast diff = %llu\n", two - one);
+
+    one = rdtsc();
+    Derived1* d1d = Caster<Derived1>::get(b1);
     two = rdtsc();
     printf("cast visitor diff = %llu\n", two - one);
 
