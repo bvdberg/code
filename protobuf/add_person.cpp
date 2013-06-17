@@ -1,10 +1,21 @@
 // See README.txt for information and build instructions.
 
+#include <time.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include "addressbook.pb.h"
 using namespace std;
+
+u_int64_t getCurrentTime()
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    u_int64_t now64 = now.tv_sec;
+    now64 *= 1000000;
+    now64 += (now.tv_nsec/1000);
+    return now64;
+}
 
 // This function fills in a Person message based on user input.
 void PromptForAddress(tutorial::Person* person) {
@@ -76,8 +87,25 @@ int main(int argc, char* argv[]) {
     }
   }
 
+    char buffer[4096];
+    for (int i=0; i<4096; i++) buffer[i] = 'a' + i%26;
+    char* cp = buffer;
+    int count = 1000;
   // Add an address.
-  PromptForAddress(address_book.add_person());
+  //PromptForAddress(address_book.add_person());
+    u_int64_t t1 = getCurrentTime();
+  for (int i=0; i<count; i++) {
+    tutorial::Person* person = address_book.add_person();
+    person->set_id(i);
+    char orig = cp[10];
+    cp[10] = 0;
+    person->set_email(cp);
+    person->set_name(cp);
+    cp[10]= orig;
+    cp++;
+  }
+    u_int64_t t2 = getCurrentTime();
+    printf("adding %d entries took %lld usec\n", count, t2 - t1);
 
   {
     // Write the new address book back to disk.

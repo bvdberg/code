@@ -1,7 +1,7 @@
 all: test_add test_list
 
 LIBS = `pkg-config --cflags --libs protobuf`
-CPPFLAGS = -Wall -Wextra -O2
+CPPFLAGS = -Wall -Wextra -O2 -lrt
 
 clean:
 	@rm -f test_add test_list addressbook.pb.cpp addressbook.pb.h 
