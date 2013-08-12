@@ -21,7 +21,7 @@ private:
 };
 
 #define ISA(Base) \
-static inline bool isa(Base* b) { \
+static inline bool classof(Base* b) { \
     int* vptr = (int*)b; \
     int* orig = (int*)&_type; \
     return (*orig == *vptr); \
@@ -66,12 +66,12 @@ Derived2A Derived2A::_type;
 
 
 template <class T> static inline bool isa(Base* b) {
-    return T::isa(b);
+    return T::classof(b);
 }
 
 // make different versions for different Base classes
 template <class T> static inline T* cast(Base* b) {
-    if (T::isa(b)) return static_cast<T*>(b);
+    if (T::classof(b)) return static_cast<T*>(b);
     return 0;
 }
 
