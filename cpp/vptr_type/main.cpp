@@ -20,40 +20,47 @@ private:
     int n;
 };
 
+#define ISA(Base) \
+static inline bool isa(Base* b) { \
+    int* vptr = (int*)b; \
+    int* orig = (int*)&_type; \
+    return (*orig == *vptr); \
+}\
+
 
 class Derived1 : public Base {
 public:
     Derived1(int n_) : Base(n_) {}
     virtual int get() { return 1; }
-    // NOTE: only works with 1 layer of derived classes!
-    // for more layers, more checks need to be done (if orig == a || orig == b etc)
-    static inline bool isa(Base* b) {
-        int* vptr = (int*)b;
-        int* orig = (int*)&_type;
-        return (*orig == *vptr);
-    }
+
+    ISA(Base);
 private:
     static Derived1 _type;
     Derived1() : Base(0) {}
 };
-
 Derived1 Derived1::_type;
 
 class Derived2 : public Base {
 public:
     Derived2(int n_) : Base(n_) {}
-    static inline bool isa(Base* b) {
-        int* vptr = (int*)b;
-        int* orig = (int*)&_type;
-        return (*orig == *vptr);
-    }
+    ISA(Base);
 private:
     static Derived2 _type;
     Derived2() : Base(0) {}
 };
-
 Derived2 Derived2::_type;
 
+
+class Derived2A : public Derived2 {
+public:
+    Derived2A(int n_) : Derived2(n_) {}
+    ISA(Base);
+    ISA(Derived2);
+private:
+    static Derived2A _type;
+    Derived2A() : Derived2(0) {}
+};
+Derived2A Derived2A::_type;
 
 
 
@@ -92,11 +99,24 @@ int main(int argc, const char *argv[])
     check("d1", d1);
     check("d2", d2);
     check("d2b", d2b);
+    printf("\n");
+    check("base", b);
+    check("d1", d1);
+    check("d2", d2);
+    check("d2b", d2b);
 
-    Derived1* dd1 = cast<Derived1>(d2);
-    assert(dd1==0);
-    Derived2* dd2 = cast<Derived2>(d2);
-    assert(dd2);
+    Base* dd2 = new Derived2A(11);
+    one = rdtsc();
+    Derived2A* dda1 = cast<Derived2A>(dd2);
+    two = rdtsc();
+    printf("cast1: diff = %llu\n", two - one);
+    assert(dda1);
+
+    one = rdtsc();
+    Derived2A* dda2 = cast<Derived2A>(d2);
+    two = rdtsc();
+    printf("cast1: diff = %llu\n", two - one);
+    assert(dda2 == 0);
 
     return 0;
 }
