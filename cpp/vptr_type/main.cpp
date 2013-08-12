@@ -20,34 +20,55 @@ private:
     int n;
 };
 
+
 class Derived1 : public Base {
 public:
     Derived1(int n_) : Base(n_) {}
     virtual int get() { return 1; }
+    // NOTE: only works with 1 layer of derived classes!
+    static inline Derived1* cast(Base* b) {
+        int* vptr = (int*)b;
+        int* orig = (int*)&_type;
+        if (*orig == *vptr) return static_cast<Derived1*>(b);
+        return 0;
+    }
+private:
+    static Derived1 _type;
+    Derived1() : Base(0) {}
 };
+
+Derived1 Derived1::_type;
 
 class Derived2 : public Base {
 public:
     Derived2(int n_) : Base(n_) {}
-    //virtual int type() const { return DERIVED2; }
+    static inline Derived1* cast(Base* b) {
+        int* vptr = (int*)b;
+        int* orig = (int*)&_type;
+        if (*orig == *vptr) return static_cast<Derived1*>(b);
+        return 0;
+    }
+private:
+    static Derived2 _type;
+    Derived2() : Base(0) {}
 };
 
-static Derived1 sd1(10);
+Derived2 Derived2::_type;
 
-static inline bool isDerived1(Base* b) {
-    int* vptr = (int*)b;
-    int* orig = (int*)&sd1;
-    return (*orig == *vptr);
+
+template <class T> static inline T* cast(Base* b) {
+    return T::cast(b);
 }
 
 
 static void check(const char* name, Base* b) {
-    printf("CHECKING %s\n", name);
     uint64_t one = rdtsc();
-    bool same = isDerived1(b);
+    // Either way possible (but Derived1::cast() can take different Base Classes)
+    //Derived1* dd1 = Derived1::cast(b);
+    Derived1* dd1 = cast<Derived1>(b);
     uint64_t two = rdtsc();
-    printf("mycast: diff = %llu\n", two - one);
-    printf("%s is D1: %s\n", name, same ? "true" : "false");
+    printf("diff = %4llu -> ", two - one);
+    printf("%s %s\n", name, dd1 ? "true" : "false");
 }
 
 
