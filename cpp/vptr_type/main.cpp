@@ -40,6 +40,7 @@ private:
 };
 Derived1 Derived1::_type;
 
+
 class Derived2 : public Base {
 public:
     Derived2(int n_) : Base(n_) {}
@@ -55,14 +56,11 @@ class Derived2A : public Derived2 {
 public:
     Derived2A(int n_) : Derived2(n_) {}
     ISA(Base);
-    ISA(Derived2);
 private:
     static Derived2A _type;
     Derived2A() : Derived2(0) {}
 };
 Derived2A Derived2A::_type;
-
-
 
 
 template <class T> static inline bool isa(Base* b) {
@@ -95,6 +93,8 @@ int main(int argc, const char *argv[])
     Base* d2 = new Derived2(21);
     Base* d2b = new Derived2(22);
     Base* b = new Base(3);
+    Base* dd2 = new Derived2A(11);
+
     check("base", b);
     check("d1", d1);
     check("d2", d2);
@@ -105,7 +105,6 @@ int main(int argc, const char *argv[])
     check("d2", d2);
     check("d2b", d2b);
 
-    Base* dd2 = new Derived2A(11);
     one = rdtsc();
     Derived2A* dda1 = cast<Derived2A>(dd2);
     two = rdtsc();
@@ -115,8 +114,15 @@ int main(int argc, const char *argv[])
     one = rdtsc();
     Derived2A* dda2 = cast<Derived2A>(d2);
     two = rdtsc();
-    printf("cast1: diff = %llu\n", two - one);
+    printf("cast2: diff = %llu\n", two - one);
     assert(dda2 == 0);
+
+    one = rdtsc();
+    Derived2* dd2new = cast<Derived2>(dd2);
+    two = rdtsc();
+    printf("cast3: diff = %llu\n", two - one);
+    // NOTE: does not work with multiple layers
+    assert(dd2new);
 
     return 0;
 }
