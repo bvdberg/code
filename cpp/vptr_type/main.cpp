@@ -26,7 +26,8 @@ public:
     Derived1(int n_) : Base(n_) {}
     virtual int get() { return 1; }
     // NOTE: only works with 1 layer of derived classes!
-    static inline Derived1* cast(Base* b) {
+    // for more layers, more checks need to be done (if orig == a || orig == b etc)
+    static inline Derived1* classof(Base* b) {
         int* vptr = (int*)b;
         int* orig = (int*)&_type;
         if (*orig == *vptr) return static_cast<Derived1*>(b);
@@ -42,7 +43,7 @@ Derived1 Derived1::_type;
 class Derived2 : public Base {
 public:
     Derived2(int n_) : Base(n_) {}
-    static inline Derived1* cast(Base* b) {
+    static inline Derived1* classof(Base* b) {
         int* vptr = (int*)b;
         int* orig = (int*)&_type;
         if (*orig == *vptr) return static_cast<Derived1*>(b);
@@ -57,7 +58,7 @@ Derived2 Derived2::_type;
 
 
 template <class T> static inline T* cast(Base* b) {
-    return T::cast(b);
+    return T::classof(b);
 }
 
 
