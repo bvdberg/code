@@ -65,16 +65,20 @@ public:
 };
 
 
-template <class T> static inline bool isa(Base* b) {
+template <class T> static inline bool isa(const Base* b) {
     return T::classof(b);
 }
 
 // make different versions for different Base classes
 template <class T> static inline T* cast(Base* b) {
-    if (T::classof(b)) return static_cast<T*>(b);
+    if (isa<T>(b)) return static_cast<T*>(b);
     return 0;
 }
 
+template <class T> static inline const T* cast(const Base* b) {
+    if (isa<T>(b)) return static_cast<const T*>(b);
+    return 0;
+}
 
 int main(int argc, const char *argv[])
 {
@@ -104,6 +108,16 @@ int main(int argc, const char *argv[])
     printf("cast3: diff = %llu\n", two - one);
     // NOTE: does not work with multiple layers
     assert(dd2new);
+
+    if (isa<Derived2>(d2a)) {
+        printf("correct\n");
+    }
+    const Base* cd2 = d2;
+    if (isa<Derived2>(cd2)) {
+        printf("correct\n");
+    }
+    const Derived2* cd2new = cast<Derived2>(cd2);
+    assert(cd2new);
 
     return 0;
 }
