@@ -23,7 +23,7 @@
 #define NUM_BUFFERS 4
 typedef struct {
     unsigned int head;
-    unsigned int size;
+    unsigned int count;
     unsigned char* data[NUM_BUFFERS];
 } Buffer;
 
@@ -32,46 +32,36 @@ Buffer buf;
 
 void buffer_init() {
     buf.head = 0;
-    buf.size = 0;
+    buf.count = 0;
     int i;
     for (i=0; i<NUM_BUFFERS; i++) {
         buf.data[i] = (unsigned char*)malloc(256);
     }
 }
 
-static unsigned int frame_getWriteIndex() {
-
-    //buf.writeIndex = (buf.writeIndex+1) % NUM_BUFFERS;
-    return 0;
-}
-
 static void buffer_print() {
-    printf("  -> size=%d  head=%d", buf.size, buf.head);
-    printf("  RI=%d  WI=%d\n", buf.head, frame_getWriteIndex());
+    printf("  -> count=%d  head=%d\n", buf.count, buf.head);
 }
-
-
 
 static void buf_consume() {
-    printf("%s() size=%d\n", __func__, buf.size);
-    if (buf.size > 0) {
+    printf("%s() count=%d\n", __func__, buf.count);
+    if (buf.count > 0) {
         printf(ANSI_GREEN"consuming %d"ANSI_NORMAL"\n", buf.head);
         buf.head = ((buf.head + 1) % NUM_BUFFERS);
-        buf.size--;
+        buf.count--;
     }
     buffer_print();
 }
 
 static void buf_produce() {
-    printf("%s() size=%d\n", __func__, buf.size);
-    if (buf.size != NUM_BUFFERS) {
-        int index = (buf.head + buf.size) % NUM_BUFFERS;
-        buf.size++;
+    printf("%s() count=%d\n", __func__, buf.count);
+    if (buf.count != NUM_BUFFERS) {
+        int index = (buf.head + buf.count) % NUM_BUFFERS;
+        buf.count++;
         printf(ANSI_RED"producing %d"ANSI_NORMAL"\n", index);
     }
     buffer_print();
 }
-
 
 int main() {
 

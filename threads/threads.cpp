@@ -52,6 +52,7 @@ void* startThread(void* mover)
     assert(m);
     printf(" thread starting pid=%d  self=%lu\n", getpid(), pthread_self());
     m->start();
+    sleep(200);
     printf(" thread finished\n");
     return 0;
 }
@@ -103,6 +104,8 @@ int main() {
 
     pthread_t threads[2];
     
+    pid_t pid = getpid();
+    printf("main pid=%d\n", pid);
     int rc = pthread_create(&threads[0], 0, startThread, (void *)&l2r);
     if (rc) {
         printf("ERROR; return code from pthread_create() is %d\n", rc);

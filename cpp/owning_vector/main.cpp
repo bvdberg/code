@@ -42,6 +42,9 @@ void pass_ownership(StmtList v) {
 class Keeper {
 public:
     Keeper(StmtList& v_) : v(v_) {}
+    StmtList take() {
+        return v;
+    }
 private:
     StmtList v;
 };
@@ -66,6 +69,12 @@ int main(int argc, const char *argv[])
         k = new Keeper(s2);
         printf("done\n");
     }
+
+    {
+        // TODO
+        //StmtList l = k->take();
+    }
+    printf("deleting keeper\n");
     delete k;
 
 

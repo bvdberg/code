@@ -12,7 +12,7 @@
 
 #include "ubi-media.h"
 
-#define BLOCKSIZE 128*1024
+#define BLOCKSIZE 512*1024
 #define PAGE_SIZE 4096
 // for volume_id blocks?
 #define RESERVED_BLOCKS 4
@@ -135,7 +135,10 @@ static int parse_ubi(void* input_map, int size, struct ubi_info* info) {
         printf("[%03d] [%08x]  vid=%u  daa=%u  crc=0x%08x  ec=%ld\n", index, offset, vid, data, crc, ec);
         //unsigned int crc2 = crc32(UBI_CRC32_INIT, hdr, UBI_EC_HDR_SIZE_CRC);
 
-        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
+        char* ccp = (char*)hdr;
+        ccp += vid;
+        struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)ccp;
+        //struct ubi_vid_hdr* vid_hdr = (struct ubi_vid_hdr*)&hdr[1];
         if (ntohl(vid_hdr->magic) == UBI_VID_HDR_MAGIC) {
             unsigned int vol_id = ntohl(vid_hdr->vol_id);
             unsigned int lnum = ntohl(vid_hdr->lnum);

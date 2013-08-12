@@ -1,6 +1,8 @@
 #ifndef OWNING_VECTOR_H
 #define OWNING_VECTOR_H
 
+#include <stdio.h>
+
 template <typename T>
 class OwningVector {
 public:

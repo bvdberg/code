@@ -22,8 +22,9 @@ void printdir(const char* name) {
     closedir(dir);
 }
 
-int main() {
-    printdir("/tmp/hal");
+int main(int argc, const char *argv[])
+{
+    printdir(argv[1]);
     return 0;
 }
 
