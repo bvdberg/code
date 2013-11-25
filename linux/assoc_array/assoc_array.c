@@ -11,9 +11,9 @@
  * 2 of the Licence, or (at your option) any later version.
  */
 //#define DEBUG
-#include <linux/slab.h>
-#include <linux/err.h>
-#include <linux/assoc_array_priv.h>
+//#include <linux/slab.h>
+//#include <linux/err.h>
+#include "assoc_array_priv.h"
 
 /*
  * Iterate over an associative array.  The caller must hold the RCU read lock
@@ -21,9 +21,8 @@
  */
 static int assoc_array_subtree_iterate(const struct assoc_array_ptr *root,
 				       const struct assoc_array_ptr *stop,
-				       int (*iterator)(const void *leaf,
-						       void *iterator_data),
-				       void *iterator_data)
+				       int (*iterator)(const void *leaf, void *iterator_data),
+                       void *iterator_data)
 {
 	const struct assoc_array_shortcut *shortcut;
 	const struct assoc_array_node *node;

@@ -14,9 +14,12 @@
 #ifndef _LINUX_ASSOC_ARRAY_PRIV_H
 #define _LINUX_ASSOC_ARRAY_PRIV_H
 
+// TEMP
+#define CONFIG_ASSOCIATIVE_ARRAY
+
 #ifdef CONFIG_ASSOCIATIVE_ARRAY
 
-#include <linux/assoc_array.h>
+#include "assoc_array.h"
 
 #define ASSOC_ARRAY_FAN_OUT		16	/* Number of slots per node */
 #define ASSOC_ARRAY_FAN_MASK		(ASSOC_ARRAY_FAN_OUT - 1)

@@ -16,7 +16,10 @@
 
 #ifdef CONFIG_ASSOCIATIVE_ARRAY
 
-#include <linux/types.h>
+#include <stdio.h>
+//#include <linux/types.h>
+#define bool unsigned char
+#define u8 unsigned char
 
 #define ASSOC_ARRAY_KEY_CHUNK_SIZE BITS_PER_LONG /* Key data retrieved in chunks of this size */
 
