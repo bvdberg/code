@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# does git update in a couple of directories
-
 #TODO also catch tags/branches output (seems to come from different process)
 
 set -e
@@ -20,7 +18,11 @@ function update {
     popd > /dev/null
 }
 
-rm -f $LOGFILE
+if [ -e $LOGFILE ]; then
+    echo "already done for today"
+    exit 0
+fi
+
 touch $LOGFILE
 
 update linux-2.6
