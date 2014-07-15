@@ -1,7 +1,6 @@
 #!/bin/bash
 
 #TODO also catch tags/branches output (seems to come from different process)
-
 set -e
 
 PWD=`pwd`
@@ -10,7 +9,8 @@ LOGFILE="$PWD/log-$DATE.txt"
 
 function update {
     DIR=$1
-    echo "updating $DIR"
+    echo ""
+    echo "====== updating $DIR ======"
     echo "" >> $LOGFILE
     echo "====== updating $DIR ======" >> $LOGFILE
     pushd $DIR > /dev/null
@@ -30,6 +30,7 @@ update lld
 update llvm
 update llvm/tools/clang
 update flatbuffers
+update capnproto
 update ldc
 update free_electrons-training-material
 update systemd
