@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
+CFLAGS=-Wall -Wextra -Wconversion -Wno-unused -Wno-unused-parameter -std=c99
 
 test: main.c
 	gcc $(CFLAGS) main.c -o test
