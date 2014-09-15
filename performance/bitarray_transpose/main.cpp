@@ -60,14 +60,13 @@ static void transpose() {
     // cut up input into blocks of 64x64bit
     for (unsigned r=0; r<rows; r+=64) {
         for (unsigned c=0; c<columns/64; ++c) {
-            int in_offset = (columns/64)*r + c;
+            const int in_offset = (columns/64)*r + c;
             uint64_t* inp = buffer1 + in_offset;
-            //printf("input block [%2d,%2d] = %d\n", c, r, in_offset);
-            int out_offset = rows*c + r;
-            uint64_t* outp = buffer2 + in_offset;
-            //printf("output block [%2d,%2d] = %d\n", c, r, out_offset);
+
+            const int out_offset = rows*c + r;
+            uint64_t* outp = buffer2 + out_offset;
+
             transposeSquare(inp, outp);
-            return;
         }
     }
     //transposeSquare(in, out);
