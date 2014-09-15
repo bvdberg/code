@@ -31,10 +31,6 @@ static uint64_t getCurrentTime()
     return now64;
 }
 
-static inline void set(unsigned char* data, int val) {
-}
-#define setbit(x, y, v) (x |= (v << y))
-
 // per 64-bit, try to cache output lines
 // transpose 64x64bit blocks
 static void transposeSquare(uint64_t* in, uint64_t* out) {
@@ -67,19 +63,18 @@ static void transpose() {
             uint64_t* outp = buffer2 + out_offset;
 
             transposeSquare(inp, outp);
+            return;
         }
     }
-    //transposeSquare(in, out);
 }
 
-// Compare with 64x64 byte transpose
-// TODO use fact that most bits are 0? (get leftmost bit of uint32_t etc)
-
 static void printInput(unsigned r, unsigned c) {
-    printf("Input: %d,%d\n", r, c);
-    uint64_t* ptr = buffer1 + (columns/64)*r + c;
+    const uint64_t offset = (columns*r) + c;
+    printf("Input: %d,%d (offset=0x%lx)\n", r, c, offset);
+    uint64_t* ptr = buffer1 + offset;
     for (unsigned i=0; i<64; i++) {
         uint64_t val = *ptr;
+        printf("  ");
         for (int j=63; j>=0; --j) {
             printf("%d", ((val >> j) & 1) == 1);
         }
@@ -89,17 +84,23 @@ static void printInput(unsigned r, unsigned c) {
 }
 
 static void printOutput(unsigned r, unsigned c) {
-    printf("Output: %d,%d\n", r, c);
-    uint64_t* ptr = buffer2 + (rows/64)*c + r;
+    const uint64_t offset = rows*c + r;
+    printf("Output: %d,%d (offset=0x%lx)\n", r, c, offset);
+    uint64_t* ptr = buffer2 + offset;
     for (unsigned i=0; i<64; i++) {
         uint64_t val = *ptr;
-        //printf("value= %lu (0x%lx)\n", val, val);
+        printf("  ");
         for (int j=63; j>=0; --j) {
             printf("%d", ((val >> j) & 1) == 1);
         }
         printf("\n");
         ptr += (rows/64);
     }
+}
+
+static void set(uint64_t c, uint64_t r, uint64_t value) {
+    const uint64_t offset = columns*r + c;
+    buffer1[offset] = 0xFFFFFFFFFFFFFFFFlu;
 }
 
 int main(int argc, const char *argv[])
@@ -110,7 +111,10 @@ int main(int argc, const char *argv[])
     buffer2 = (uint64_t*)malloc(size);
     memset(buffer2, 0, size);
 
-    buffer1[63*columns/64] = 0xFFFFFFFFFFFFFFFFlu;
+    //set(0, 0, 0xFFFFFFFFFFFFFFFFlu);
+    for (int i=0; i<64; i++) {
+        buffer1[(columns/64)*i] = 0x8000000000000000;
+    }
 
     printf("Input: %d x %d = %d bits (%d bytes)\n", rows, columns, rows*columns, size);
     uint64_t t1 = getCurrentTime();
@@ -122,7 +126,7 @@ int main(int argc, const char *argv[])
     printInput(0, 0);
     printOutput(0, 0);
 
-    // FIX: example broken (overwrites?)
+    // FIX: transposed wrong way around -> depends on bit order!
 
     // TODO unit test with for all x,y == y,x
 
