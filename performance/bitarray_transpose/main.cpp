@@ -47,6 +47,7 @@ static void transposeSquare(uint64_t* in, uint64_t* out) {
     uint64_t* op = out;
     for (unsigned i=0; i<64; i++) {
         *op = output[i];
+        //printf("out [%2d] = %d\n", i, (int)(op-buffer2));
         op += (rows/64);
     }
 }
@@ -54,16 +55,15 @@ static void transposeSquare(uint64_t* in, uint64_t* out) {
 // always transpose buffer1 -> buffer2
 static void transpose() {
     // cut up input into blocks of 64x64bit
-    for (unsigned r=0; r<rows; r+=64) {
+    for (unsigned r=0; r<rows/64; ++r) {
         for (unsigned c=0; c<columns/64; ++c) {
             const int in_offset = (columns/64)*r + c;
             uint64_t* inp = buffer1 + in_offset;
 
             const int out_offset = rows*c + r;
             uint64_t* outp = buffer2 + out_offset;
-
+            //printf("transpose c=%d r=%d  offset=%d\n", c, r, out_offset);
             transposeSquare(inp, outp);
-            return;
         }
     }
 }
@@ -98,11 +98,6 @@ static void printOutput(unsigned r, unsigned c) {
     }
 }
 
-static void set(uint64_t c, uint64_t r, uint64_t value) {
-    const uint64_t offset = columns*r + c;
-    buffer1[offset] = 0xFFFFFFFFFFFFFFFFlu;
-}
-
 int main(int argc, const char *argv[])
 {
     int size = rows * columns / 8;
@@ -111,9 +106,9 @@ int main(int argc, const char *argv[])
     buffer2 = (uint64_t*)malloc(size);
     memset(buffer2, 0, size);
 
-    //set(0, 0, 0xFFFFFFFFFFFFFFFFlu);
+    buffer1[4*columns/64] = 0xFFFFFFFFFFFFFFFFlu;
     for (int i=0; i<64; i++) {
-        buffer1[(columns/64)*i] = 0x8000000000000000;
+        buffer1[(columns/64)*i] |= 0x8000000000000000;
     }
 
     printf("Input: %d x %d = %d bits (%d bytes)\n", rows, columns, rows*columns, size);
