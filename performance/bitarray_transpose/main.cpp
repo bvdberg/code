@@ -142,7 +142,6 @@ static void transpose() {
             //printf("transpose c=%d r=%d  offset=%d\n", c, r, out_offset);
             //transposeSquare(inp, outp);
             transposeByOutput(inp, outp);
-            return;
         }
     }
 }
@@ -180,28 +179,37 @@ static void printOutput(unsigned r, unsigned c) {
 int main(int argc, const char *argv[])
 {
     int size = rows * columns / 8;
-    buffer1 = (uint64_t*)malloc(size);
-    memset(buffer1, 0, size);
-    buffer2 = (uint64_t*)malloc(size);
-    memset(buffer2, 0, size);
-
-    buffer1[4*columns/64] = 0xFFFFFFFFFFFFFFFFlu;
-    for (int i=0; i<64; i++) {
-        buffer1[(columns/64)*i] |= 0x8000000000000000;
-    }
-
     printf("Input: %d x %d = %d bits (%d bytes)\n", rows, columns, rows*columns, size);
-    uint64_t t1 = getCurrentTime();
-    uint64_t tt1 = rdtsc();
-    transpose();
-    //transposeSquare(buffer1, buffer2);
-    //transposeByOutput(buffer1, buffer2);
-    uint64_t tt2 = rdtsc();
-    uint64_t t2 = getCurrentTime();
-    printf("transpose(segment) took %lu usec (%lu cycles)\n", t2-t1, tt2-tt1);
+    int count = 1;
     if (argc > 1) {
-        printInput(0, 0);
-        printOutput(0, 0);
+        count = atoi(argv[1]);
+    }
+    while (count--) {
+        buffer1 = (uint64_t*)malloc(size);
+        memset(buffer1, 0, size);
+        buffer2 = (uint64_t*)malloc(size);
+        memset(buffer2, 0, size);
+
+        buffer1[4*columns/64] = 0xFFFFFFFFFFFFFFFFlu;
+        for (int i=0; i<64; i++) {
+            buffer1[(columns/64)*i] |= 0x8000000000000000;
+        }
+
+        uint64_t t1 = getCurrentTime();
+        uint64_t tt1 = rdtsc();
+        transpose();
+        //transposeSquare(buffer1, buffer2);
+        //transposeByOutput(buffer1, buffer2);
+        uint64_t tt2 = rdtsc();
+        uint64_t t2 = getCurrentTime();
+        printf("transpose(segment) took %lu usec (%lu cycles)\n", t2-t1, tt2-tt1);
+        printf("   est. per PG (3 Heads * 50 segments) %lu ms\n", 3*50*(t2-t1));
+        if (argc > 2) {
+            printInput(0, 0);
+            printOutput(0, 0);
+        }
+        free(buffer1);
+        free(buffer2);
     }
 
     // FIX: transposed wrong way around -> depends on bit order!
