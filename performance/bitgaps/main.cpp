@@ -24,6 +24,7 @@ static void printBuffer(const char* text, uint64_t* data, unsigned count) {
 }
 
 
+// TODO add minGap that has to be recorded on outparam (max 8), return numgaps > minGap
 static void bit_gap(uint64_t* buf, unsigned offset, unsigned size, unsigned& distToLast) {
     uint64_t value = *buf;
     //printBuffer(0, &value, 1);
