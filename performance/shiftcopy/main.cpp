@@ -60,10 +60,9 @@ static void init() {
 
 // offset is offset in bits in input buffer. Can be > 64
 // count = number of bits to be copied
-// distance < 0 = shift left, > 0 = shift right
 // out must be able to handle distance shift
 // padded output is guaranteed to be zero
-static void shiftcopy(uint64_t* in, uint64_t* out, unsigned offset, unsigned count, int distance) {
+static void shiftcopy(uint64_t* in, uint64_t* out, unsigned offset, unsigned count) {
     uint64_t* ip = in;
     uint64_t* op = out;
     const uint64_t hshift = offset;
@@ -127,7 +126,7 @@ int main(int argc, const char *argv[])
 
         uint64_t t1 = getCurrentTime();
         uint64_t tt1 = rdtsc();
-        shiftcopy(buffer1, buffer2, offset, count, 0);
+        shiftcopy(buffer1, buffer2, offset, count);
         uint64_t tt2 = rdtsc();
         uint64_t t2 = getCurrentTime();
         printf("shiftmove took %lu usec (%lu cycles)\n", t2-t1, tt2-tt1);
