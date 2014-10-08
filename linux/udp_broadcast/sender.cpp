@@ -26,28 +26,23 @@ static int create_sender(const char*  ipaddr, unsigned int port)  {
         exit(1);
     }
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(port);
-    if (bind(fd, (struct sockaddr*)&addr, sizeof(addr))) {
-        perror("bind");
-        exit(-1);
-    }
-
     int broadcast = 1;
     if (setsockopt(fd,SOL_SOCKET,SO_BROADCAST, &broadcast, sizeof(broadcast)) != 0) {
         perror("setsockopt - SO_SOCKET ");
         exit(-1);
     }
 
-    struct sockaddr_in serverAddr;
-    memset(&serverAddr, 0, sizeof(serverAddr));
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr(ipaddr);
-    serverAddr.sin_port = htons(port);
-    if (connect(fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ipaddr);
+    addr.sin_port = htons(port);
+    if (bind(fd, (struct sockaddr*)&addr, sizeof(addr))) {
+        perror("bind");
+        exit(-1);
+    }
+
+    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         perror("connect");
         exit(-1);
     }
