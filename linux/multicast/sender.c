@@ -31,13 +31,19 @@ int main(int argc, char* argv[])
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(MULTICAST_IP);
     addr.sin_port = htons(MULTICAST_PORT);
-    
+
     unsigned char ttl = 1;
-    setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) != 0) {
+        perror("setsockopt");
+        exit(-1);
+    }
 
     int reuse = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-                
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) != 0) {
+        perror("setsockopt");
+        exit(-1);
+    }
+
     if (bind(fd, (struct sockaddr*)&addr, sizeof(addr))) {
         perror("bind");
         exit(1);
@@ -47,7 +53,7 @@ int main(int argc, char* argv[])
         perror("connect");
         exit(1);
     }
-    
+
     u_char loop;
     socklen_t size;
     getsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, &size);
