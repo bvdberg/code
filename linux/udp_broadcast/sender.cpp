@@ -13,12 +13,7 @@
 #include "constants.h"
 #include "NetUtils.h"
 
-/*
-    TODO bind to specific interface (pass via args)
-    // Listen doesn't care about interface!
-*/
-
-static int create(const char*  ipaddr, unsigned int port)  {
+static int create_sender(const char*  ipaddr, unsigned int port)  {
     int fd;
     if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
         perror("socket");
@@ -74,7 +69,7 @@ int main(int argc, char* argv[]) {
     printf("using interface %s  addr=%s  netmask=%s  bcast=%s\n", interface.name.c_str(),
         interface.addr.c_str(), interface.netmask.c_str(), interface.bcast.c_str());
 
-    int fd = create(interface.bcast.c_str(), PORT);
+    int fd = create_sender(interface.bcast.c_str(), PORT);
 
     const char* data = "Hello BroadCast!";
     int len = (int)strlen(data) + 1;
