@@ -1,20 +1,24 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <assert.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <ifaddrs.h>
 
-#include "NetUtils.h"
 #include "constants.h"
+#include "NetUtils.h"
 
+/*
+    TODO bind to specific interface (pass via args)
+    // Listen doesn't care about interface!
+*/
 
-static int create_listen(const char* iface, const char* ipaddr, unsigned int port)  {
+static int create(const char*  ipaddr, unsigned int port)  {
     int fd;
     if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
         perror("socket");
@@ -31,7 +35,6 @@ static int create_listen(const char* iface, const char* ipaddr, unsigned int por
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    //addr.sin_addr.s_addr = inet_addr(ipaddr);
     addr.sin_port = htons(port);
     if (bind(fd, (struct sockaddr*)&addr, sizeof(addr))) {
         perror("bind");
@@ -40,21 +43,19 @@ static int create_listen(const char* iface, const char* ipaddr, unsigned int por
 
     int broadcast = 1;
     if (setsockopt(fd,SOL_SOCKET,SO_BROADCAST, &broadcast, sizeof(broadcast)) != 0) {
-        perror("setsockopt - SO_SOCKET");
+        perror("setsockopt - SO_SOCKET ");
         exit(-1);
     }
 
-#if 0
-    // NOTE: binding needs some capabilities (Root access)
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
-    if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) != 0) {
-        perror("setsockopt - SO_BINDTODEVICE");
-        //exit(-1);
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = inet_addr(ipaddr);
+    serverAddr.sin_port = htons(port);
+    if (connect(fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        perror("connect");
+        exit(-1);
     }
-#endif
-
     return fd;
 }
 
@@ -73,25 +74,18 @@ int main(int argc, char* argv[]) {
     printf("using interface %s  addr=%s  netmask=%s  bcast=%s\n", interface.name.c_str(),
         interface.addr.c_str(), interface.netmask.c_str(), interface.bcast.c_str());
 
-    int fd = create_listen(iface, interface.bcast.c_str(), PORT);
+    int fd = create(interface.bcast.c_str(), PORT);
+
+    const char* data = "Hello BroadCast!";
+    int len = (int)strlen(data) + 1;
 
     while (1) {
-        int len = 1500;
-        char buffer[len];
-        int flags = 0;
-        struct sockaddr_in remote;
-        unsigned sin_size = sizeof(struct sockaddr_in);
-        memset(&remote, 0, sin_size);
-        int res = recvfrom(fd, buffer, len, flags, (struct sockaddr*)&remote, &sin_size);
-        if (res == -1) {
-            perror("recvfrom");
+        printf("sending %d bytes\n", len);
+        if (send(fd, data, len, 0) < 0) {
+            perror("send");
             break;
         }
-        buffer[res] = 0;
-        const char* src_addr = inet_ntoa(remote.sin_addr);
-        int src_port = ntohs(remote.sin_port);
-        assert (remote.sin_family == AF_INET);
-        printf("received %d bytes from %s:%d %s\n", res, src_addr, src_port, buffer);
+        sleep(1);
     }
     close(fd);
     return 0;

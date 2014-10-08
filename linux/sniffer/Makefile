@@ -1,5 +1,4 @@
-#CC=gcc
-CC=arm-none-linux-gnueabi-gcc
+CC=gcc
 
 sniffer: main.c
 	$(CC) -Wall main.c -o sniffer
