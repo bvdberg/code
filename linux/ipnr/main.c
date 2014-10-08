@@ -72,8 +72,6 @@ int main(void) {
         // ioctl_list
     //    SIOCGIFNETMASK
     //    SIOCGIFBRDADDR
-        printf("\n");
-
 
     }
 

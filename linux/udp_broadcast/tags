@@ -1,0 +1,23 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+CONSTANTS_H	constants.h	2;"	d
+IPNR	constants.h	4;"	d
+Interface	NetUtils.h	/^    struct Interface {$/;"	s	class:NetUtils
+NET_UTILS_H	NetUtils.h	2;"	d
+NetUtils	NetUtils.h	/^class NetUtils {$/;"	c
+PORT	constants.h	5;"	d
+bcast	NetUtils.h	/^        std::string bcast;$/;"	m	struct:NetUtils::Interface
+create	sender.cpp	/^static int create(const char*  ipaddr, unsigned int port)  {$/;"	f	file:
+create_listen	listener.cpp	/^static int create_listen(const char*  ipaddr, unsigned int port)  {$/;"	f	file:
+findInterface	NetUtils.cpp	/^int NetUtils::findInterface(const std::string& iname, Interface* result) {$/;"	f	class:NetUtils
+ipnr	NetUtils.h	/^        std::string ipnr;$/;"	m	struct:NetUtils::Interface
+macnr	NetUtils.h	/^        std::string macnr;$/;"	m	struct:NetUtils::Interface
+main	listener.cpp	/^int main(int argc, char* argv[]) {$/;"	f
+main	sender.cpp	/^int main(int argc, char* argv[]) {$/;"	f
+mtu	NetUtils.h	/^        int mtu;$/;"	m	struct:NetUtils::Interface
+name	NetUtils.h	/^        std::string name;$/;"	m	struct:NetUtils::Interface
+netmask	NetUtils.h	/^        std::string netmask;$/;"	m	struct:NetUtils::Interface
