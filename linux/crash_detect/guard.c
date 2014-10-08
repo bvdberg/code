@@ -18,14 +18,17 @@ typedef struct {
     char executable[64];
 } Child;
 
-static Child start_app(const char* prog) {
+#define MAX_ARGS 20
+
+static Child start_app(const char* prog, char* argv[]) {
     Child child;
     strncpy(child.executable, prog, 63);
     pid_t child_pid = fork();
     if (child_pid == 0) { //child
         usleep(50000);
         //execvp(argv[1], NULL);
-        execlp(prog, prog, (char*)NULL);
+        //execlp(prog, prog, (char*)NULL);
+        execv(prog, argv);
         printf("guard: error starting %s\n", prog);
         child.pid = 0;
     } else {   //parent
@@ -38,13 +41,13 @@ static Child start_app(const char* prog) {
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2) {
-        printf("Usage: %s [prog]\n", argv[0]);
+    if (argc < 2) {
+        printf("Usage: %s [prog] <arg1> <arg2>\n", argv[0]);
         exit(1);
     }
 
     //phase 1 - start child process
-    Child child = start_app(argv[1]);
+    Child child = start_app(argv[1], &argv[1]);
 
     int count = 0;
     while (count < 4) {
@@ -56,7 +59,7 @@ int main(int argc, char *argv[])
         if (!WIFEXITED(status)) { //child exits abnormally
             if (child.pid == child_pid) {
                 printf("guard: process [%s] (pid %d) crashed!\n", child.executable, child.pid);
-                child = start_app(argv[1]);
+                child = start_app(argv[1], &argv[1]);
             }
             // else weird
         } else {
