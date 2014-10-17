@@ -143,6 +143,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    // TODO return code of prog1 (if normal termination), -1 if crashed
     return 0;
 }
 
