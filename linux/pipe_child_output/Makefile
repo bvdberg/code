@@ -1,9 +1,12 @@
-CFLAGS=-Wall -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-all: guard test
+CFLAGS=-Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
 
-guard: guard.c
-	@gcc $(CFLAGS) guard.c -o guard
+all: test reader writer
 
-test: test.c
-	@gcc test.c -o test -Wall
+test: main.c
+	@gcc $(CFLAGS) main.c -o test
 
+reader: reader.c
+	@gcc reader.c -o reader -Wall
+
+writer: writer.c
+	@gcc writer.c -o writer -Wall

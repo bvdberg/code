@@ -1,3 +1,5 @@
 guard
-test
+reader
+writer
+*.log
 tags
