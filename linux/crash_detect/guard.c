@@ -74,14 +74,7 @@ static Child start_app(const char* prog, char* argv[], int redirect) {
 #endif
             fprintf(stderr, "---- [%ld] starting %s ----\n", time(0), prog);
             fflush(stderr);
-            //writeChecked(1, "--- NEW OUTPUT ---\n");
-            //writeChecked(2, "--- NEW ERROR ---\n");
-            // NOTE printf's on stdout are sometimes not seen in resulting file (exec does not flusH)
-            //syncfs(1);
-            //syncfs(2);
         }
-        //execvp(argv[1], NULL);
-        //execlp(prog, prog, (char*)NULL);
         execv(prog, argv);
         child.pid = 0;
         fprintf(stderr, "---- [%ld] failed to start: %s: %s\n", time(0), prog, strerror(errno));
