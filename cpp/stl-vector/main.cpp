@@ -6,7 +6,9 @@ using namespace std;
 
 int main() {
 
-    vector<int> v;
+    typedef std::vector<int> Vector;
+    typedef Vector::reverse_iterator VectorRevIter;
+    Vector v;
 
     printf("size=%d, capacity=%d\n", v.size(), v.capacity());
     v.resize(5);  //put 10 elements in
@@ -30,6 +32,10 @@ int main() {
         printf("%d -> %d\n", i++, (*iter));
     }
     
+    printf("reverse\n");
+    for (VectorRevIter iter = v.rbegin(); iter != v.rend(); ++iter) {
+        printf("%d\n", *iter);
+    }
 
     return 0;
 }
