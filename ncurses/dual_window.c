@@ -3,8 +3,19 @@
 */
 
 #include <stdlib.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <curses.h>
+
+static uint64_t getCurrentTime()
+{
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    uint64_t now64 = now.tv_sec;
+    now64 *= 1000000;
+    now64 += now.tv_usec;
+    return now64;
+}
 
 static void initColors() {
     if (has_colors() == FALSE) {
@@ -103,6 +114,8 @@ int main(void) {
     print_menu(current, highlight, 2);
     wrefresh(current);
 
+    uint64_t duration = 0;
+
     int ch = 0;
     while ( (ch = getch()) != 'q' ) {
         switch (ch) {
@@ -139,8 +152,14 @@ int main(void) {
             mvwprintw(current, 7, 2, "You pressed: 0x%0x", ch);
             break;
         }
+        mvprintw(2, 1, "duration %lld usec", duration);
+        mvprintw(5, 1, "Printed in Background (in main window)");
+        mvprintw(5, 60, "Printed in Background (in main window)");
         print_menu(current, highlight, 2);
+        uint64_t t1 = getCurrentTime();
         wrefresh(current);
+        uint64_t t2 = getCurrentTime();
+        duration = t2 - t1;
     }
 
     delwin(child1);
