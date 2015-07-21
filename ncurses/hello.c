@@ -15,8 +15,6 @@
 int main(void) {
 
     WINDOW * mainwin = initscr();;
-
-    // Initialize ncurses
     if (mainwin == NULL) {
         fprintf(stderr, "Error initialising ncurses.\n");
         exit(EXIT_FAILURE);
@@ -59,20 +57,14 @@ int main(void) {
         int n = 1;
         while ( n <= 13 ) {
             color_set(n, NULL);
-            mvaddstr(6 + n, 32, " Hello, world! ");
+            //mvaddstr(6 + n, 32, " Hello, world! ");
+            mvprintw(6 + n, 32, " Hello, world! (%d)", n);
             n++;
         }
     }
 
-
-    /*  Refresh the screen and sleep for a
-    while to get the full screen effect  */
-
     refresh();
-    sleep(3);
-
-
-    /*  Clean up after ourselves  */
+    getch();
 
     delwin(mainwin);
     endwin();

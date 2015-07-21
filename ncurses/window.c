@@ -15,7 +15,7 @@
 int main(void) {
 
     /*  Set the dimensions and initial position for our child window   */
-    int      width = 23, height = 7;
+    int      width = 30, height = 10;
     int      rows  = 25, cols   = 80;
     int      x = (cols - width)  / 2;
     int      y = (rows - height) / 2;
@@ -50,7 +50,6 @@ int main(void) {
 
     int ch = 0;
     while ( (ch = getch()) != 'q' ) {
-        mvprintw(16, 2, "You pressed: 0x%x", ch);
         switch ( ch ) {
         case KEY_UP:
             if ( y > 0 ) --y;
@@ -78,6 +77,9 @@ int main(void) {
             fprintf(stderr, "ERROR mvwin()\n");
             exit(-1);
         }
+        mvwprintw(childwin, 7, 2, "You pressed: 0x%0x", ch);
+        wrefresh(childwin);
+        // hmm still leaves shadow..
     }
 
 
