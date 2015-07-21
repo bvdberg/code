@@ -1,7 +1,9 @@
 CFLAGS=-Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
 LDFLAGS=-lncurses
 
-all: hello input menu scroll_menu window border worms dual_window
+TARGETS=hello input menu scroll_menu window panels border worms dual_window
+#all: hello input menu scroll_menu window panels border worms dual_window
+all: $(TARGETS)
 
 hello: hello.c
 	gcc $(CFLAGS) hello.c -o hello $(LDFLAGS)
@@ -18,6 +20,9 @@ scroll_menu: scroll_menu.c
 window: window.c
 	gcc $(CFLAGS) window.c -o window $(LDFLAGS)
 
+panels: panels.c
+	gcc $(CFLAGS) panels.c -o panels $(LDFLAGS) -lpanel
+
 border: border.c
 	gcc $(CFLAGS) border.c -o border $(LDFLAGS)
 
@@ -28,6 +33,6 @@ dual_window: dual_window.c
 	gcc $(CFLAGS) dual_window.c -o dual_window $(LDFLAGS)
 
 clean:
-	rm -f *.o hello
+	rm -f *.o $(TARGETS)
 
 
