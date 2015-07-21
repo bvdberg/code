@@ -151,10 +151,9 @@ int main(void) {
         case 10:
             break;
         default:
-            mvprintw(10, 2, "You pressed: 0x%x", ch);
-            mvwprintw(current, 7, 2, "You pressed: 0x%0x", ch);
             break;
         }
+        mvprintw(30, 2, "You pressed: 0x%x   ", ch);
         mvprintw(2, 1, "duration %lld usec", duration);
         mvprintw(8, 1, "Printed in Background (in main window)");
         mvprintw(8, 60, "Printed in Background (in main window)");
