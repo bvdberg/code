@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <string.h>
 #include <curses.h>
 
 static uint64_t getCurrentTime()
@@ -39,15 +40,17 @@ static void initColors() {
     init_pair(13, COLOR_BLACK,   COLOR_CYAN);
 }
 
-static WINDOW* create_window(WINDOW* parent, int h, int w, int y, int x) {
-    WINDOW* childwin = subwin(parent, h, w, y, x);
-    int res = box(childwin, 0, 0);
-    if (res != OK) {
-        fprintf(stderr, "error box()\n");
-        exit(-1);
-    }
-    //mvwaddstr(childwin, 5, 3, "Press 'q' to quit");
-    return childwin;
+static WINDOW* create_window(WINDOW* parent, int h, int w, int y, int x, const char* title) {
+    WINDOW* win = subwin(parent, h, w, y, x);
+    box(win, 0, 0);
+    mvwaddch(win, 2, 0, ACS_LTEE);
+    mvwhline(win, 2, 1, ACS_HLINE, w-2);
+    mvwaddch(win, 2, w-1, ACS_RTEE);
+    //mvwaddstr(win, 5, 3, "Press 'q' to quit");
+    int middle = (w - strlen(title)) / 2;
+    wcolor_set(win, 5, NULL);
+    mvwprintw(win, 1, middle, "%s", title);
+    return win;
 }
 
 static char *choices[] = {
@@ -63,7 +66,7 @@ static void print_menu(WINDOW *menu_win, int highlight, int color) {
     int x, y, i;
 
     x = 2;
-    y = 2;
+    y = 4;
     wcolor_set(menu_win, color, NULL);
     //box(menu_win, 0, 0);
     for(i = 0; i < n_choices; ++i) {
@@ -102,8 +105,8 @@ int main(void) {
 
     mvprintw(1, 1, "max = %d,%d\n", cols, rows);
 
-    WINDOW* child1 = create_window(mainwin, w_height, w_width, 3, 0);
-    WINDOW* child2 = create_window(mainwin, w_height, w_width, 3, w_width);
+    WINDOW* child1 = create_window(mainwin, w_height, w_width, 3, 0, "Modules");
+    WINDOW* child2 = create_window(mainwin, w_height, w_width, 3, w_width, "Declarations");
     refresh();
 
     WINDOW* current = child1;
@@ -153,8 +156,8 @@ int main(void) {
             break;
         }
         mvprintw(2, 1, "duration %lld usec", duration);
-        mvprintw(5, 1, "Printed in Background (in main window)");
-        mvprintw(5, 60, "Printed in Background (in main window)");
+        mvprintw(8, 1, "Printed in Background (in main window)");
+        mvprintw(8, 60, "Printed in Background (in main window)");
         print_menu(current, highlight, 2);
         uint64_t t1 = getCurrentTime();
         wrefresh(current);

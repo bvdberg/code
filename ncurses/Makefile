@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
+CFLAGS=-O3 -Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
 LDFLAGS=-lncurses
 
 TARGETS=hello input menu scroll_menu window panels border worms dual_window
