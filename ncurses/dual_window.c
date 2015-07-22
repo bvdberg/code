@@ -1,5 +1,7 @@
 /*
-    - redraw current windown entirely to avoid ghosting
+    ncurses
+    - redraw current windown entirely to avoid ghosting effects
+    - draw border outside window? (so we can clear entire window)
 */
 
 #include <stdlib.h>

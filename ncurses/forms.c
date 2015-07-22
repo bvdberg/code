@@ -19,33 +19,14 @@ static const char* options[] = {
 };
 static const unsigned num_options = sizeof(options) / sizeof(options[0]);
 
-#define MAX_LEN 20
-static char buffer[MAX_LEN];
-static int bufindex;
-
-
-static int isValid(int ch) {
-    if (isalnum(ch)) return 1;
-    if (ch == '_') return 1;
-    return 0;
-}
-
-static void handle(int ch) {
-    if (!isValid(ch)) return;
-    // TODO handle backspace, etc
-    buffer[bufindex] = ch;
-    bufindex++;
-    buffer[bufindex] = 0;
-}
-
 static void printBuffer(int y, int x) {
-    // nasty, does sometimes miss stuff -> keep own bookkeeping
-    form_driver(my_form, REQ_NEXT_FIELD);
-    form_driver(my_form, REQ_PREV_FIELD);
+    //form_driver(my_form, REQ_NEXT_FIELD);
+    //form_driver(my_form, REQ_PREV_FIELD);
     form_driver(my_form, REQ_END_LINE);
     attron(COLOR_PAIR(1));
-    mvprintw(10, 10, "Left [%s]", buffer);
+    mvprintw(10, 10, "Left [%s]   Right [%s]  ", field_buffer(field[0], 0), field_buffer(field[1], 0));
     attroff(COLOR_PAIR(1));
+    form_driver(my_form, REQ_END_LINE);
 }
 
 int main()
@@ -100,10 +81,9 @@ int main()
                 break;
             default:
                 mvprintw(8, 10, "You typed 0x%x", ch);
-                handle(ch);
-                printBuffer(10, 10);
                 // If this is a normal character, it gets Printed
                 form_driver(my_form, ch);
+                printBuffer(10, 10);
                 refresh();
                 break;
         }
