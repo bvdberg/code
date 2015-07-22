@@ -1,5 +1,5 @@
 /*
-    - show lines to scroll through (like MC)
+    - redraw current windown entirely to avoid ghosting
 */
 
 #include <stdlib.h>
@@ -61,6 +61,10 @@ static char *choices[] = {
     "Exit",
 };
 static int n_choices = sizeof(choices)/sizeof(choices[0]);
+
+static const char* getChoice(int index) {
+    return choices[index];
+}
 
 static void print_menu(WINDOW *menu_win, int highlight, int color) {
     int x, y, i;
@@ -125,6 +129,7 @@ int main(void) {
         case 0x9:   // apparantly TAB key
             wcolor_set(current, 0, NULL);
             //wclrtoeol(current);   // does work, but also clears border piece
+            //delch
             mvwaddstr(current, 9, 10, "(passive)");
             //wdeleteln(current);   // removes line (window gets smaller)
             //werase(current);  // clears all content (including borders, etc)
@@ -149,12 +154,20 @@ int main(void) {
             if (highlight == n_choices) highlight = 0;
            break;
         case 10:
+        {
+            const char* name = "Left Panel";
+            if (current == child2) name = "Right Panel";
+            mvprintw(31, 2, "You selected: %s - %s", name, getChoice(highlight));
             break;
+        }
         default:
             break;
         }
+        if (ch != 10) {
+            mvaddstr(31, 2, "                                      ");
+        }
         mvprintw(30, 2, "You pressed: 0x%x   ", ch);
-        mvprintw(2, 1, "duration %lld usec", duration);
+        mvprintw(2, 1, "duration %lld usec   ", duration);
         mvprintw(8, 1, "Printed in Background (in main window)");
         mvprintw(8, 60, "Printed in Background (in main window)");
         print_menu(current, highlight, 2);

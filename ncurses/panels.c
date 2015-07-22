@@ -41,7 +41,7 @@ int main()
     init_pair(4, COLOR_CYAN, COLOR_BLACK);
 
     init_wins(my_wins, 3);
-    
+ 
     /* Attach a panel to each window */     /* Order is bottom up */
     my_panels[0] = new_panel(my_wins[0]);   /* Push 0, order: stdscr-0 */
     my_panels[1] = new_panel(my_wins[1]);   /* Push 1, order: stdscr-0-1 */
