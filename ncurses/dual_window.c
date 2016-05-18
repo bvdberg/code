@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <curses.h>
+#include <stdint.h>
 
 static uint64_t getCurrentTime()
 {

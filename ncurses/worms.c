@@ -35,7 +35,7 @@ void Draw(void);
 
 void InitWorm(void) {
 
-    WORM * temp;
+    WORM* temp = NULL;
     int x = 1, y = 1, i;
 
 
@@ -106,7 +106,9 @@ void Draw(void) {
 void MoveWorm(void) {
 
     WORM * temp = worm;
-    int x, y, ch;
+    int x = 0;
+    int y = 0;
+    int ch = 0;
 
     /*  Move to last worm bit  */
     while ( temp->next != NULL )

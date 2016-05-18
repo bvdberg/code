@@ -8,6 +8,9 @@
   Worms game using ncurses.
 */
 
+#define _POSIX_C_SOURCE 1
+#define _BSD_SOURCE 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
