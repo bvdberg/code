@@ -2,9 +2,9 @@
 #include <stdint.h>
 
 #define ASSIGN_BIT(w, pos, value) (w |= (value<<pos))
-
 #define SET_BIT(w, pos) (w |= (1<<pos))
 #define CLR_BIT(w, pos) (w &= ~(1<<pos))
+#define GET_BIT(w, pos) ((w >> pos) & 1)
 
 int main(int argc, const char *argv[])
 {
