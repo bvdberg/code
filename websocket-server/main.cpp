@@ -35,7 +35,7 @@ public:
     }
     virtual void onReceiveData(uint32_t size, const uint8_t* data) {
         printf("MyListener: %s(size=%d)\n", __func__, size);
-        const char* text = "Good morning WebSockets!!";
+        //const char* text = "Good morning WebSockets!!";
         //sendData(strlen(text), (const uint8_t*)text);
         const char* large = "Good morging WebSockets. This a big story, to make sure " \
            " that the frame is larger then 126 bytes. Hopefully by now it is... Nope" \

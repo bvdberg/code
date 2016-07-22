@@ -396,7 +396,7 @@ void WebSocketServer::handle_data(unsigned index, int size, const uint8_t* data)
     // cp points to data
     ptrdiff_t header_len = cp -(uint8_t*)data;
     if (size != (int)(payload + header_len)) {
-        printf("warning: invalid data size: expected %d bytes, got %d\n", header_len + payload, size);
+        printf("warning: invalid data size: expected %d bytes, got %d\n", (int)(header_len + payload), size);
         return;
     }
     // unmask data
