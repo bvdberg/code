@@ -13,7 +13,7 @@ class Context;
 class Base {
 public:
     Base(int id_);
-    virtual ~Base();
+    ~Base();
 protected:
     void* operator new(size_t bytes) {
         assert(0 && "Base cannot be allocated with regular 'new'");
@@ -30,18 +30,17 @@ public:
     void* operator new(size_t bytes, const Context* C) {
         return operator new(bytes, *C);
     }
-    // placement operator?
-    // void* operator new(size_t bytes, void* mem) NOEXCEPT { return mem; }
+    // placement operator, for sub-class specific allocators
+    void* operator new(size_t bytes, void* mem) NOEXCEPT { return mem; }
 
     void operator delete(void*, const Context& C) NOEXCEPT {}
     void operator delete(void*, const Context* C) NOEXCEPT {}
     // Q: why these?)
     void operator delete(void*, size_t) NOEXCEPT {}
     void operator delete(void*, void*) NOEXCEPT {}
-private:
+protected:
     int id;
-    uint8_t data[10];
-
+private:
     Base(const Base&);
     Base& operator= (const Base&);
 };

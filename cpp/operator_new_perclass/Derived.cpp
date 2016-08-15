@@ -2,10 +2,10 @@
 #include <stdio.h>
 
 Derived::Derived(int id_) : Base(id_) {
-    printf("Derived()\n");
+    //printf("Derived() id=%d\n", id_);
 }
 
 Derived::~Derived() {
-    printf("~Derived()\n");
+    //printf("~Derived()\n");
 }
 

@@ -7,9 +7,9 @@
 class Derived : public Base {
 public:
     Derived(int id_);
-    virtual ~Derived();
+    ~Derived();
 private:
-    uint8_t mydata[20];
+    uint32_t mydata[40];
 };
 
 #endif

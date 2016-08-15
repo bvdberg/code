@@ -4,24 +4,26 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <stdio.h>  // for printf
+class MemBlock;
+
+#define BLOCK_SIZE 64*1024
 
 class Context {
 public:
-    Context();
+    Context(uint32_t blockSize_ = BLOCK_SIZE);
     ~Context();
 
-    void* Allocate(size_t Size, unsigned Align = 8) const {
-        // TODO use Align
-        printf("Allocate %lu / %lu\n", Size, sizeof(pool) - (pointer-pool));
-        uint8_t* result = pointer;
-        pointer += Size;
-        return pointer;
-    }
+    void* Allocate(size_t Size, unsigned Align = 8) const;
     void Deallocate(void* Ptr) const {}
+
+    void dump() const;
+    size_t getAllocatedMemory() const;
 private:
-    uint8_t pool[4096];
-    mutable uint8_t* pointer;
+    void allocateMemory() const;
+
+    mutable MemBlock* blocks;
+    mutable MemBlock* lastBlock;
+    uint32_t blockSize;
 
     Context(const Context&);
     Context& operator= (const Context&);
@@ -33,6 +35,7 @@ inline void *operator new(size_t Bytes, const Context &C, size_t Alignment) {
     return C.Allocate(Bytes, Alignment);
 }
 
+// TODO never seems to be used
 inline void operator delete(void *Ptr, const Context &C, size_t) {
     C.Deallocate(Ptr);
 }
