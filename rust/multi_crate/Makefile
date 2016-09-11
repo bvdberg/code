@@ -1,5 +1,3 @@
-CFLAGS=-Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
-
 all: executable library.rlib
 
 library.rlib: rary.rs

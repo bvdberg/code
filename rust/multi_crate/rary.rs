@@ -1,5 +1,5 @@
 pub fn public_function() {
-    println!("called rary's `public_function()`");
+    println!("BBBB called rary's `public_function()`");
 }
 
 fn private_function() {
