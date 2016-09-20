@@ -3,7 +3,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
+#include <unistd.h>
 #include <stdio.h>
 
 #include "UdpServer.h"
@@ -74,7 +74,7 @@ void UdpServer::run() {
             throw std::logic_error("cannot receive");
         }
 
-        printf("received %d bytes from %s\n", recv_bytes, inet_ntoa(cliAddr.sin_addr));
+        printf("received %d bytes from %s\n", (int)recv_bytes, inet_ntoa(cliAddr.sin_addr));
         print_buffer((const unsigned char*)msgbuf, recv_bytes);
     }
 }

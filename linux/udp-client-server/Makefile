@@ -1,5 +1,5 @@
-#CC=g++
-CC=arm-none-linux-gnueabi-g++
+CC=g++
+#CC=arm-none-linux-gnueabi-g++
 
 all:
 	$(CC) UdpClient.cpp -o client -Wall -Wextra

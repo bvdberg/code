@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <stdexcept>
 #include <iostream>
@@ -68,12 +69,14 @@ void UdpClient::fillPacket(char* data, size_t size) {
 }
                                                               
 
+#define UDP_PORT 6701
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        UdpClient client("127.0.0.1", 12345);
+        UdpClient client("127.0.0.1", UDP_PORT);
         client.send();
     }  else {
-        UdpClient client(argv[1], 12345);
+        UdpClient client(argv[1], UDP_PORT);
         client.send();
     }
     return 0;
