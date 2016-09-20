@@ -75,7 +75,7 @@ void UdpServer::run() {
         }
 
         printf("received %d bytes from %s\n", (int)recv_bytes, inet_ntoa(cliAddr.sin_addr));
-        print_buffer((const unsigned char*)msgbuf, recv_bytes);
+        print_buffer((const unsigned char*)msgbuf, (int)recv_bytes);
     }
 }
 
