@@ -44,6 +44,17 @@ int main(void) {
         }
         printf("  %16s", inet_ntoa(((struct sockaddr_in *)&netmask.ifr_addr)->sin_addr));
 
+        // find broadcast
+        struct ifreq bcast;
+        memset(&bcast, 0, sizeof(struct ifreq));
+        bcast.ifr_addr.sa_family = AF_INET;
+        strncpy(bcast.ifr_name, item->ifr_name, IFNAMSIZ-1);
+        if (ioctl(sck, SIOCGIFBRDADDR, &bcast) != 0) {
+            perror("ioctl(SIOCGIFBRDADDR)");
+            continue;
+        }
+        printf("  %16s", inet_ntoa(((struct sockaddr_in *)&bcast.ifr_broadaddr)->sin_addr));
+
         // show macnr
         struct ifreq hwaddr;
         hwaddr.ifr_addr.sa_family = AF_INET;

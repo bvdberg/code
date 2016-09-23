@@ -1,3 +1,5 @@
+// Source: https://rt.wiki.kernel.org/index.php/Threaded_RT-application_with_memory_locking_and_stack_handling_example
+
    // Compile with 'gcc thisfile.c -lrt -Wall'
    #include <stdlib.h>
    #include <stdio.h>
