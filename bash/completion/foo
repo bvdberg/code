@@ -5,9 +5,20 @@ _foo()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     opts="--help --verbose --version"
+    # adding to list
+    opts="$opts --bla"
 
     if [[ ${cur} == -* ]] ; then
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+
+    local opts2
+
+    # add all txt files to list dynamically
+    opts2=`ls *.txt`
+    if [[ ${cur} == * ]] ; then
+        COMPREPLY=( $(compgen -W "${opts2}" -- ${cur}) )
         return 0
     fi
 }
