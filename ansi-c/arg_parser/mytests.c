@@ -27,20 +27,20 @@ CTEST2(utils, two_args) {
 CTEST2(utils, quoted_arg) {
     ASSERT_EQUAL(2, parseArgs("cmd", "'one two'", data->argv, 30));
     ASSERT_STR("cmd", data->argv[0]);
-    ASSERT_STR("'one two'", data->argv[1]);
+    ASSERT_STR("one two", data->argv[1]);
 }
 
 CTEST2(utils, partial_quoted_arg) {
     ASSERT_EQUAL(2, parseArgs("cmd", "--header='one two'", data->argv, 30));
     ASSERT_STR("cmd", data->argv[0]);
-    ASSERT_STR("--header='one two'", data->argv[1]);
+    ASSERT_STR("--header=one two", data->argv[1]);
 }
 
 CTEST2(utils, combi) {
     ASSERT_EQUAL(4, parseArgs("cmd", "one --header='one two' three", data->argv, 30));
     ASSERT_STR("cmd", data->argv[0]);
     ASSERT_STR("one", data->argv[1]);
-    ASSERT_STR("--header='one two'", data->argv[2]);
+    ASSERT_STR("--header=one two", data->argv[2]);
     ASSERT_STR("three", data->argv[3]);
 }
 
@@ -49,8 +49,8 @@ CTEST2(utils, url) {
     ASSERT_EQUAL(8, parseArgs("/usr/bin/wget", args, data->argv, 30));
     ASSERT_STR("/usr/bin/wget", data->argv[0]);
     ASSERT_STR("--no-check-certificate", data->argv[1]);
-    ASSERT_STR("--header='Content-Type: application/json'", data->argv[2]);
-    ASSERT_STR("--header='x-abbevci-version: 2016-05-02'", data->argv[3]);
+    ASSERT_STR("--header=Content-Type: application/json", data->argv[2]);
+    ASSERT_STR("--header=x-abbevci-version: 2016-05-02", data->argv[3]);
     ASSERT_STR("--post-file=/tmp/update_request.json", data->argv[4]);
     ASSERT_STR("-O", data->argv[5]);
     ASSERT_STR("/tmp/update_response.json", data->argv[6]);

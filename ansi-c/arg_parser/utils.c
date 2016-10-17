@@ -3,35 +3,48 @@
 
 #define MAX_ARGSLEN 512
 
+//#include <stdio.h>
+
 int parseArgs(const char* cmd, const char* argstr, char* argv[], int maxargs) {
+    //printf("INPUT [%s]\n", argstr);
     static char tmp[MAX_ARGSLEN];
     int argc = 0;
     if (cmd[0] != 0) {
         argv[argc++] = (char*)cmd;
     }
 
-    strcpy(tmp, argstr);
-    char* cp = tmp;
-    char* start = tmp;
+    char* op = tmp;
+    const char* ip = argstr;
+    char* start = op;
     int inSingleQuote = 0;
-    while (*cp != 0) {
+    while (*ip != 0) {
+        //printf(" '%c' %d\n", *ip, inSingleQuote);
         if (inSingleQuote) {
-            if (*cp == '\'') {
+            if (*ip == '\'') {
                 inSingleQuote = 0;
+                ip++;
+            } else {
+                *op++ = *ip++;
             }
         } else {
-            if (*cp == '\'') {
+            if (*ip == '\'') {
                 inSingleQuote = 1;
-            } else if (*cp == ' ') {
-                *cp = 0;
+                ip++;
+                continue;
+            }
+            if (*ip == ' ') {
+                *op++ = 0;
+                ip++;
                 argv[argc] = start;
                 argc++;
-                start = cp+1;
+                start = op;
+            } else {
+                *op++ = *ip++;
             }
         }
-        cp++;
     }
-    if (cp != start) {
+    if (op != start) {
+        *op = 0;
         argv[argc] = start;
         argc++;
     }
