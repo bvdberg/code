@@ -33,6 +33,10 @@ int parseArgs(const char* cmd, const char* argstr, char* argv[], int maxargs) {
                 continue;
             }
             if (*ip == ' ') {
+                if (op == start) {
+                    ip++;
+                    continue;
+                }
                 *op++ = 0;
                 ip++;
                 argv[argc] = start;

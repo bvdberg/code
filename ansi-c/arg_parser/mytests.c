@@ -45,6 +45,14 @@ CTEST2(utils, combi) {
     ASSERT_STR("three", data->argv[3]);
 }
 
+CTEST2(utils, multi_spaces) {
+    ASSERT_EQUAL(3, parseArgs("cmd", " one  two ", data->argv, 30));
+    ASSERT_STR("cmd", data->argv[0]);
+    ASSERT_STR("one", data->argv[1]);
+    ASSERT_STR("two", data->argv[2]);
+    ASSERT_NULL(data->argv[3]);
+}
+
 CTEST2(utils, url) {
     const char* args = "--no-check-certificate --header='Content-Type: application/json' --header='x-abbevci-version: 2016-05-02' --post-file=/tmp/update_request.json -O /tmp/update_response.json https://cluster.westeurope.cloudapp.azure.com:8443/api/deviceregistration/updater";
     ASSERT_EQUAL(8, parseArgs("/usr/bin/wget", args, data->argv, 30));
