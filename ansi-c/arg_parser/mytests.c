@@ -15,6 +15,7 @@ CTEST2(utils, one_arg) {
     ASSERT_EQUAL(2, parseArgs("cmd", "one", data->argv, 30));
     ASSERT_STR("cmd", data->argv[0]);
     ASSERT_STR("one", data->argv[1]);
+    ASSERT_NULL(data->argv[2]);
 }
 
 CTEST2(utils, two_args) {

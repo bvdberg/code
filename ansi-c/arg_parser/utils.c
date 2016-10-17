@@ -48,6 +48,7 @@ int parseArgs(const char* cmd, const char* argstr, char* argv[], int maxargs) {
         argv[argc] = start;
         argc++;
     }
+    argv[argc] = 0;
 
     return argc;
 }
