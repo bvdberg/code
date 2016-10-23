@@ -6,7 +6,6 @@
 int main(int argc, const char *argv[])
 {
     struct utsname un;
-    struct hostent *hp;
     int len;
     if (uname(&un) != 0) {
         perror("uname");
@@ -18,6 +17,7 @@ int main(int argc, const char *argv[])
     printf("version = %s\n", un.version);
     printf("machine = %s\n", un.machine);
 
+    struct hostent *hp;
     if ((hp = gethostbyname(un.nodename)) == NULL) {
         printf("unable to get system name\n");
         printf("REMOTE = %s\n", un.nodename);
