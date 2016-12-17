@@ -4,6 +4,15 @@
 #include <arpa/inet.h>
 
 /*
+    Design:
+    - Every Object has an ID and a label
+    - goal of TLV structure is to be able to extend Objects, create new
+        types without changing other clients.
+        * add new Properties (just add TLV Type) -> unknown properties are ignored
+        * Q: new Objects types? (needed?, consequences?
+*/
+
+/*
     Alignment: EVERY TLV is aligned on 4-byte boundaries. If size is smaller, zero padding
     is in between.
 */
