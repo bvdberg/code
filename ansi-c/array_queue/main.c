@@ -13,6 +13,10 @@ static uint32_t data[QUEUE_MAX];
 static unsigned tail = 0;
 static unsigned head = 0;
 
+static bool queue_empty() { return head == tail; }
+
+static bool queue_full() { return NEXT(head) == tail; }
+
 static void queue_add(uint32_t item) {
     printf("add %d  tail %d  head %d\n", item, tail, head);
     unsigned next = NEXT(head);
@@ -23,8 +27,6 @@ static void queue_add(uint32_t item) {
     data[head] = item;
     head = next;
 }
-
-static bool queue_empty() { return head == tail; }
 
 static uint32_t queue_remove() {
     //printf("remove   tail %d  head %d\n", tail, head);
@@ -56,6 +58,7 @@ int main(int argc, const char *argv[])
     for (unsigned i=0; i<QUEUE_MAX+1; i++) {
         queue_add(i);
     }
+    printf("full: %d\n", queue_full());
 	queue_show();
     queue_remove();
     queue_remove();
