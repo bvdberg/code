@@ -18,7 +18,7 @@ int main(void) {
 
     /* Query available interfaces. */
     struct ifconf ifc;
-    char buf[1024];
+    char buf[4096];
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = buf;
     if(ioctl(sck, SIOCGIFCONF, &ifc) < 0) {
@@ -32,7 +32,7 @@ int main(void) {
     int i;
     for(i = 0; i < nInterfaces; i++) {
         struct ifreq *item = &ifr[i];
-        printf("%6s  %12s\t", item->ifr_name, inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
+        printf("%10s  %12s\t", item->ifr_name, inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
 
         // show netmask
         struct ifreq netmask;
