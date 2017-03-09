@@ -25,4 +25,4 @@ obj:
 	@objdump -T -C libspaceship.so.1 | grep -v CXX | grep -v GLIB
 
 clean:
-	@rm -f testflight libspaceship*
+	@rm -f testflight libspaceship* *.o
