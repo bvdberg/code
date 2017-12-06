@@ -26,6 +26,9 @@ int main(int argc, const char *argv[])
     f(sum);
     f(sum);
     printf("total %d\n", total);
+    total = 0;
+    f([&total](int x) { total += x; return x * 6; });
+    printf("total %d\n", total);
 
     return 0;
 }
