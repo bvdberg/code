@@ -35,19 +35,20 @@ static void print_bits(uint32_t word) {
 #endif
 
     // Results: For-loop still seems faster then builtin code below
-#if 0
-    for (unsigned i=0; i<31; ++i) {
-        int bit = (word >> (31-i)) & 0x1;
-        values[i] = bit;
+#if 1
+    for (unsigned i=0; i<32; ++i) {
+        const int bit = 31 - i;
+        const int value = (word >> bit) & 0x1;
+        values[bit] = value;
+        //if (value) printf("    bit %d\n", bit);
     }
-
 #else
     while (bits != 0) {
         const int zeroes = __builtin_clz(bits);
-        //printf("    %d    %d  %d\n", zeroes, (bits & (1<<31)) != 0,  (bits >> 31) & 0x1);
+        printf("    %d    %d  %d\n", zeroes, (bits & (1<<31)) != 0,  (bits >> 31) & 0x1);
         const int bit = 31 - zeroes;
         values[bit] = 1;
-        //printf("  bit %d\n", bit);
+        printf("  bit %d\n", bit);
         bits &= ~(1<<bit);
     }
 #endif
@@ -83,6 +84,7 @@ int main(int argc, const char *argv[]) {
     print_bits(0x80000000);
     print_bits(0x0F0F0000);
     print_bits(0xFFFFFFFF);
+    print_bits(0x3);
 
 #if 1
     uint64_t t1 = rdtsc();
