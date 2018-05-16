@@ -22,8 +22,10 @@ struct maskname {
 };
 
 const struct maskname names[] = {
-    {0x100, "file created" },
-    {0x200, "file deleted" },
+    { IN_CREATE, "file created" },
+    { IN_DELETE, "file deleted" },
+    { IN_CREATE | IN_ISDIR, "dir created" },
+    { IN_CREATE | IN_ISDIR, "dir deleted" },
     {0, 0}
 };
 
@@ -66,7 +68,7 @@ int main(int argc, char* argv[]) {
             free(buf);
             break;
         }
-        printf("len = %d\n", len);
+        printf("len = %d\n", (int)len);
         struct inotify_event* event = (struct inotify_event*) buf;
         int i = 0;
         while (i < len) {
