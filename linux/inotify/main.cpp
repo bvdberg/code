@@ -5,16 +5,11 @@
  */
 
 #include <stdio.h>
-#include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/inotify.h>
 
 int stop = 0;
-
-static void sigint(int) {
-    stop = true;
-}
 
 struct maskname {
     uint32_t mask;
@@ -26,6 +21,8 @@ const struct maskname names[] = {
     { IN_DELETE, "file deleted" },
     { IN_CREATE | IN_ISDIR, "dir created" },
     { IN_CREATE | IN_ISDIR, "dir deleted" },
+    { IN_DELETE_SELF, "delete self" },
+    { IN_IGNORED, "ignored" },
     {0, 0}
 };
 
@@ -45,13 +42,12 @@ int main(int argc, char* argv[]) {
         printf("usage %s [dir to watch]\n", argv[0]);
         return 1;
     }
-    signal(SIGINT, sigint);
 
     int fd = inotify_init();
     printf("fd=%d\n", fd);
 
     printf("watching %s\n", argv[1]);
-    int wd = inotify_add_watch(fd, argv[1], IN_CREATE | IN_DELETE);
+    int wd = inotify_add_watch(fd, argv[1], IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MOVE_SELF);
     if (wd == -1) {
         perror("inotify_add_watch");
         return -1;
@@ -79,14 +75,23 @@ int main(int argc, char* argv[]) {
             printf("wd=%d, mask=0x%x (%s), cookie=%u, len=%u, name=[", event->wd, event->mask, mask2name(event->mask), event->cookie, event->len);
             if (event->len > 0) printf("%s", &event->name[0]);
             printf("]\n");
+
+            if (event->mask == IN_DELETE_SELF) {
+                wd = 0;  // don't call inotify_rm_watch
+                stop = 1;
+                break;
+            }
             i += (sizeof(inotify_event) + event->len);
             event++;
         }
 
         free(buf);
     }
-    int ret = inotify_rm_watch (fd, wd);
-    if (ret) perror ("inotify_rm_watch");
+    if (wd != 0) {
+        int ret = inotify_rm_watch (fd, wd);
+        if (ret) perror ("inotify_rm_watch");
+    }
+    close (fd);
 
     return 0;
 }

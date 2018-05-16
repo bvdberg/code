@@ -1,2 +1,2 @@
 test: main.cpp
-	g++ main.cpp -Wall -o test
+	g++ -O2 main.cpp -Wall -Wextra -o test
