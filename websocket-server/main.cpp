@@ -28,7 +28,7 @@ public:
     virtual ~MyListener() {}
 
     virtual void onNewConnection(const char* src_ip) {
-        printf(COL_INFO "new connection from %s"ANSI_NORMAL"\n", src_ip);
+        printf(COL_INFO "new connection from %s" ANSI_NORMAL"\n", src_ip);
     }
     virtual void onLostConnection() {
         printf("MyListener: %s()\n", __func__);

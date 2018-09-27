@@ -190,8 +190,8 @@ void WebSocketServer::newConnection() {
 
 void WebSocketServer::closeConnection(unsigned index, bool self) {
     // NOTE: dont remove connections here to avoid modifications during iteration
-    if (self) printf(COL_INFO "closed connection (%d)"ANSI_NORMAL"\n", index);
-    else printf(COL_INFO "client closed connection (%d)"ANSI_NORMAL"\n", index);
+    if (self) printf(COL_INFO "closed connection (%d)" ANSI_NORMAL"\n", index);
+    else printf(COL_INFO "client closed connection (%d)" ANSI_NORMAL"\n", index);
     close(connections[index].conn_fd);
     connections[index].conn_fd = -1;
     listener.onLostConnection();
@@ -213,7 +213,7 @@ void WebSocketServer::handleData(unsigned index) {
     switch (connections[index].state) {
     case WS_HANDSHAKE:
 #ifdef DEBUG_TRAFFIC
-        printf(ANSI_GREEN "%s"ANSI_NORMAL"\n", buffer);
+        printf(ANSI_GREEN "%s" ANSI_NORMAL"\n", buffer);
 #endif
         handle_handshake(index, recv_bytes, buffer);
         break;
@@ -289,10 +289,10 @@ void WebSocketServer::send(unsigned index, int size, const uint8_t* data) {
     }
     switch (connections[index].state) {
     case WS_HANDSHAKE:
-        printf(ANSI_RED "%s"ANSI_NORMAL"\n", data);
+        printf(ANSI_RED "%s" ANSI_NORMAL"\n", data);
         break;
     case WS_DATA_TRANSFER:
-        printf("  "ANSI_RED);
+        printf("  " ANSI_RED);
         printRaw((const uint8_t*)data, size);
         printf(ANSI_NORMAL"\n");
         break;
@@ -342,7 +342,7 @@ void WebSocketServer::handle_handshake(unsigned index, int size, char* data) {
     ss << "Connection: Upgrade\x0d\x0a";
     std::string input = findKey(size, data);
     if (input == "") {
-        printf(COL_INFO "cannot find key, closing connection"ANSI_NORMAL"\n");
+        printf(COL_INFO "cannot find key, closing connection" ANSI_NORMAL"\n");
         closeConnection(index, true);
         return;
     }
@@ -364,7 +364,7 @@ void WebSocketServer::handle_handshake(unsigned index, int size, char* data) {
 void WebSocketServer::handle_data(unsigned index, int size, const uint8_t* data) {
     assert(size >= 3);
 #ifdef DEBUG_TRAFFIC
-    printf("  "ANSI_GREEN);
+    printf("  " ANSI_GREEN);
     printRaw(data, size);
     printf(ANSI_NORMAL"\n");
 #endif
