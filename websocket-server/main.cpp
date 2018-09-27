@@ -35,12 +35,23 @@ public:
     }
     virtual void onReceiveData(uint32_t size, const uint8_t* data) {
         printf("MyListener: %s(size=%d)\n", __func__, size);
-        //const char* text = "Good morning WebSockets!!";
-        //sendData(strlen(text), (const uint8_t*)text);
+        printf("  %s\n", data);
+#if 1
+        const char* text = "Good morning WebSockets!!";
+        if (size > 128) {
+            const char* msg = "Message too big (max 128 bytes)";
+            g_server->sendData(strlen(msg), (const uint8_t*)msg);
+            return;
+        }
+        char reply[256];
+        sprintf(reply, "Good morging WebSockets: %s", data);
+        g_server->sendData(strlen(reply), (const uint8_t*)reply);
+#else
         const char* large = "Good morging WebSockets. This a big story, to make sure " \
            " that the frame is larger then 126 bytes. Hopefully by now it is... Nope" \
            "still not big enough so I'll make up some more crap";
         g_server->sendData(strlen(large), (const uint8_t*)large);
+#endif
     }
 };
 
@@ -50,6 +61,7 @@ int main(int argc, const char *argv[])
     MyListener listener;
     // NOTE:  port 6000 doesn't work, but 7681 does!?
     int port = 7681;
+    port = 8080;
     WebSocketServer server(port, listener);
     g_server = &server;
 
@@ -92,6 +104,7 @@ int main(int argc, const char *argv[])
         }
 #else
         server.step();
+/*
         usleep(100000); // 10 Hz
         if (i % 10 == 9) {
             char msg[128];
@@ -99,6 +112,7 @@ int main(int argc, const char *argv[])
             server.sendData(strlen(msg), (const uint8_t*)msg);
         }
         i++;
+*/
 #endif
     }
 

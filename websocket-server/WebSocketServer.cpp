@@ -236,7 +236,7 @@ void WebSocketServer::step() {
     }
 
     struct timeval timeout;
-    timeout.tv_sec = 0;
+    timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     int res = select(max_fd + 1, &rdfs, NULL, NULL, &timeout);
     if (res < 0) {

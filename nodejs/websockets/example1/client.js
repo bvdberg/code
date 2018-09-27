@@ -30,4 +30,6 @@ client.on('connect', function(connection) {
     sendNumber();
 });
 
-client.connect('ws://localhost:8080/', 'echo-protocol');
+// NOTE: to talk to own C++ WS server, use line without echo-protocol
+//client.connect('ws://localhost:8080/', 'echo-protocol');
+client.connect('ws://localhost:8080/');
