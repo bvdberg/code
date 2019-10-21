@@ -61,7 +61,7 @@ int main(int argc, const char *argv[])
     MyListener listener;
     // NOTE:  port 6000 doesn't work, but 7681 does!?
     int port = 7681;
-    port = 8080;
+    //port = 8080;
     WebSocketServer server(port, listener);
     g_server = &server;
 
