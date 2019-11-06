@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
+#define fatal(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 static void send_fd(int socket, const int *fds, int n) {
     char buf[CMSG_SPACE(n * sizeof(int))];
@@ -33,7 +33,7 @@ static void send_fd(int socket, const int *fds, int n) {
 
     printf("size %lu\n", sizeof(msg));
     if (sendmsg (socket, &msg, 0) < 0)
-        handle_error ("Failed to send message");
+        fatal("Failed to send message");
 }
 
 int main(int argc, char *argv[]) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1)
-        handle_error ("Failed to create socket");
+        fatal("Failed to create socket");
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -53,15 +53,15 @@ int main(int argc, char *argv[]) {
 
     int fds[2];
     fds[0] = open(argv[1], O_RDONLY);
-    if (fds[0] < 0) handle_error ("Failed to open file 1 for reading");
+    if (fds[0] < 0) fatal("Failed to open file 1 for reading");
     fprintf (stdout, "Opened fd %d in client\n", fds[0]);
 
     fds[1] = open(argv[2], O_RDONLY);
-    if (fds[1] < 0) handle_error ("Failed to open file 2 for reading");
+    if (fds[1] < 0) fatal("Failed to open file 2 for reading");
     fprintf (stdout, "Opened fd %d in client\n", fds[1]);
 
     if (connect(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1)
-        handle_error ("Failed to connect to socket");
+        fatal("Failed to connect to socket");
 
     send_fd (sfd, fds, 2);
 

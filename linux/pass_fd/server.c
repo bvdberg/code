@@ -12,7 +12,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
+#define fatal(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 #if 0
 static void dump(const uint8_t* data, unsigned len) {
@@ -37,7 +37,7 @@ static int* recv_fd(int socket, int n) {
     msg.msg_controllen = sizeof(buf);
 
     if (recvmsg (socket, &msg, MSG_CMSG_CLOEXEC) < 0)
-        handle_error ("Failed to receive message");
+        fatal("Failed to receive message");
 
     //dump((const uint8_t*)&msg, sizeof(msg));
 
@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
     printf("pid %u: ls -al /proc/%u/fd\n", getpid(), getpid());
 
     int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sfd == -1) handle_error ("Failed to create socket");
+    if (sfd == -1) fatal("Failed to create socket");
 
     if (unlink ("/tmp/fd-pass.socket") == -1 && errno != ENOENT)
-        handle_error ("Removing socket file failed");
+        fatal("Removing socket file failed");
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -61,14 +61,14 @@ int main(int argc, char *argv[]) {
     strncpy(addr.sun_path, "/tmp/fd-pass.socket", sizeof(addr.sun_path) - 1);
 
     if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1)
-        handle_error ("Failed to bind to socket");
+        fatal("Failed to bind to socket");
 
     if (listen(sfd, 5) == -1)
-        handle_error ("Failed to listen on socket");
+        fatal("Failed to listen on socket");
 
     int cfd = accept(sfd, NULL, NULL);
     if (cfd == -1)
-        handle_error ("Failed to accept incoming connection");
+        fatal("Failed to accept incoming connection");
 
     int* fds = recv_fd (cfd, 2);
 
@@ -78,14 +78,13 @@ int main(int argc, char *argv[]) {
         ssize_t nbytes;
         while ((nbytes = read(fds[i], buffer, sizeof(buffer))) > 0) {
             int written = write(1, buffer, nbytes);
-            if (written != nbytes) handle_error("cannot write");
+            if (written != nbytes) fatal("cannot write");
         }
         *buffer = '\0';
         //close(fds[i]);  // NOTE: need to close, here
     }
 
-    if (close(cfd) == -1)
-        handle_error ("Failed to close client socket");
+    if (close(cfd) == -1) fatal("Failed to close client socket");
 
     printf("waiting after (pid %u)\n", getpid());
     sleep(20);
