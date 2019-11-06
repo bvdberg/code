@@ -1,7 +1,7 @@
-CFLAGS=-O3 -Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99
+CFLAGS=-O2 -Wall -Wextra -Wno-unused -Wno-unused-parameter -std=c99 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
 LDFLAGS=-lncurses
 
-TARGETS=hello input menu scroll_menu window panels border worms forms dual_window
+TARGETS=hello input menu scroll_menu window panels border worms forms dual_window scroll_window
 all: $(TARGETS)
 
 hello: hello.c
@@ -15,6 +15,9 @@ menu: menu.c
 
 scroll_menu: scroll_menu.c
 	gcc $(CFLAGS) scroll_menu.c -o scroll_menu $(LDFLAGS) -lmenu
+
+scroll_window: scroll_window.c
+	gcc $(CFLAGS) scroll_window.c -o scroll_window $(LDFLAGS)
 
 window: window.c
 	gcc $(CFLAGS) window.c -o window $(LDFLAGS)

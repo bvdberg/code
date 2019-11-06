@@ -20,7 +20,7 @@ const struct maskname names[] = {
     { IN_CREATE, "file created" },
     { IN_DELETE, "file deleted" },
     { IN_CREATE | IN_ISDIR, "dir created" },
-    { IN_CREATE | IN_ISDIR, "dir deleted" },
+    { IN_DELETE | IN_ISDIR, "dir deleted" },
     { IN_DELETE_SELF, "delete self" },
     { IN_IGNORED, "ignored" },
     {0, 0}
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]) {
             break;
         }
         printf("len = %d\n", (int)len);
-        struct inotify_event* event = (struct inotify_event*) buf;
         int i = 0;
         while (i < len) {
+            struct inotify_event* event = (struct inotify_event*) &buf[i];
             if (event->wd != wd) {
                 printf("invalid wd: %d\n", event->wd);
                 return -1;
@@ -82,7 +82,6 @@ int main(int argc, char* argv[]) {
                 break;
             }
             i += (sizeof(inotify_event) + event->len);
-            event++;
         }
 
         free(buf);

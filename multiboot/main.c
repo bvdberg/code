@@ -72,6 +72,7 @@ static const struct multiboot_header* mb_find_header(const void* data, unsigned 
     while (current < end) {
         const struct multiboot_header* H = (struct multiboot_header*)current;
         if (H->magic == MULTIBOOT2_HEADER_MAGIC) {
+            printf("found magic at offset 0x%x\n", current - data);
             uint32_t sum = H->magic + H->architecture + H->header_length + H->checksum;
             if (sum == 0) return H;
         }
