@@ -36,7 +36,7 @@ static int* recv_fd(int socket, int n) {
     msg.msg_control = buf;
     msg.msg_controllen = sizeof(buf);
 
-    if (recvmsg (socket, &msg, 0) < 0)
+    if (recvmsg (socket, &msg, MSG_CMSG_CLOEXEC) < 0)
         handle_error ("Failed to receive message");
 
     //dump((const uint8_t*)&msg, sizeof(msg));
