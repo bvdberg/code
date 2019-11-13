@@ -44,10 +44,10 @@ public:
             return;
         }
         char reply[256];
-        sprintf(reply, "Good morging WebSockets: %s", data);
+        sprintf(reply, "Good morning WebSockets: %s", data);
         g_server->sendData(strlen(reply), (const uint8_t*)reply);
 #else
-        const char* large = "Good morging WebSockets. This a big story, to make sure " \
+        const char* large = "Good morning WebSockets. This a big story, to make sure " \
            " that the frame is larger then 126 bytes. Hopefully by now it is... Nope" \
            "still not big enough so I'll make up some more crap";
         g_server->sendData(strlen(large), (const uint8_t*)large);
