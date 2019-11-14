@@ -1,6 +1,14 @@
 // From:
 // https://openforums.wordpress.com/2016/08/07/open-file-descriptor-passing-over-unix-domain-sockets/
 
+/*
+    NOTES:
+    - reading from file before passing keeps current offset in file on other side.
+    - receiver can use lseek to reset offset again
+    - access rights are only checked at open(), not when sent
+        sudo ./send /root/file    can be received by non-root client
+*/
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +18,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#define fatal(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
+#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 static void send_fd(int socket, const int *fds, int n) {
     char buf[CMSG_SPACE(n * sizeof(int))];
@@ -33,7 +41,7 @@ static void send_fd(int socket, const int *fds, int n) {
 
     printf("size %lu\n", sizeof(msg));
     if (sendmsg (socket, &msg, 0) < 0)
-        fatal("Failed to send message");
+        handle_error ("Failed to send message");
 }
 
 int main(int argc, char *argv[]) {
@@ -44,7 +52,7 @@ int main(int argc, char *argv[]) {
 
     int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1)
-        fatal("Failed to create socket");
+        handle_error ("Failed to create socket");
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -53,17 +61,25 @@ int main(int argc, char *argv[]) {
 
     int fds[2];
     fds[0] = open(argv[1], O_RDONLY);
-    if (fds[0] < 0) fatal("Failed to open file 1 for reading");
+    if (fds[0] < 0) handle_error ("Failed to open file 1 for reading");
     fprintf (stdout, "Opened fd %d in client\n", fds[0]);
 
     fds[1] = open(argv[2], O_RDONLY);
-    if (fds[1] < 0) fatal("Failed to open file 2 for reading");
+    if (fds[1] < 0) handle_error ("Failed to open file 2 for reading");
     fprintf (stdout, "Opened fd %d in client\n", fds[1]);
 
+    char buf[3];
+    int numread = read(fds[0], buf, 3);
+    if (numread != 3) handle_error("read");
+
     if (connect(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1)
-        fatal("Failed to connect to socket");
+        handle_error ("Failed to connect to socket");
 
     send_fd (sfd, fds, 2);
+
+    close(fds[0]);
+    close(fds[1]);
+    close(sfd);
 
     exit(EXIT_SUCCESS);
 }
