@@ -40,7 +40,7 @@ static void create_processes() {
     }
     uint64_t t2 = now();
     uint64_t duration = t2 - t1;
-    printf("process creation (%u times) = %lu  (%lu each)\n", TIMES, duration, duration/TIMES);
+    printf("process creation (%u times) = %lu  (%lu usec each)\n", TIMES, duration, duration/TIMES);
 }
 
 static void* thread_main(void* arg) {
@@ -64,7 +64,7 @@ static void create_threads() {
     }
     uint64_t t2 = now();
     uint64_t duration = t2 - t1;
-    printf(" thread creation (%u times) = %lu  (%lu each)\n", TIMES, duration, duration/TIMES);
+    printf(" thread creation (%u times) = %lu  (%lu usec each)\n", TIMES, duration, duration/TIMES);
 }
 
 
