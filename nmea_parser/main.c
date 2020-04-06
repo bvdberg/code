@@ -9,67 +9,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "color.h"
+#include "nmea_parser.h"
 
-// TODO fix CR/LF for LINE_SIZE 2
 #define LINE_SIZE 128
-
-#define CR 0x0D
-#define LF 0x0A
-
-typedef struct {
-    char line_buf[256];
-    char* line_end;
-    bool found_newline;
-} nmea_parser;
-
-
-static void nmea_parser_init(nmea_parser* nmea) {
-    memset(nmea, 0, sizeof(nmea_parser));
-    nmea->line_end = nmea->line_buf;
-}
-
-static void nmea_handle_line(const char* line) {
-    printf("-> %s\n", line);
-}
-
-static void nmea_parser_add(nmea_parser* nmea, char* line) {
-    printf("%s%s%s\n", ANSI_GREEN, line, ANSI_NORMAL);
-    char* cp = line;
-    if (!nmea->found_newline) {
-        while (*cp) {
-            if (cp[0] == CR && cp[1] == LF) {
-                nmea->found_newline = true;
-                cp += 2;
-                break;
-            }
-            cp++;
-        }
-    }
-
-    if (!nmea->found_newline) return;
-
-    // copy lines into line_buf
-    char* line_start = cp;
-    char* op = nmea->line_end;
-    while (*cp) {
-        // TODO does not go right every time
-        if (cp[0] == CR && cp[1] == LF) {
-            *op = 0;
-            nmea_handle_line(nmea->line_buf);
-            op = nmea->line_buf;
-            cp += 2;
-            continue;
-        }
-        if (cp[0] != LF) {  // remove newlines
-           *op = *cp;
-           op++;
-        }
-        cp++;
-    }
-    *op = 0;
-    nmea->line_end = op;
-}
+//#define LINE_SIZE 2
 
 int main(int argc, const char *argv[])
 {
@@ -84,8 +27,7 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    nmea_parser nmea;
-    nmea_parser_init(&nmea);
+    nmea_parser* parser = nmea_parser_create();
 
     while (1) {
         char line[LINE_SIZE];
@@ -97,10 +39,11 @@ int main(int argc, const char *argv[])
         if (numread == 0) break;
 
         line[numread] = 0;
-        nmea_parser_add(&nmea, line);
+        nmea_parser_add(parser, line);
     }
 
 
+    nmea_parser_destroy(parser);
     printf("done\n");
     close(fd);
     return 0;
