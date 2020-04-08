@@ -12,10 +12,9 @@
 
 int main (int argc, char *argv[])
 {
-    int sfd;
-    sigset_t mask;
 
     /* We will handle SIGTERM and SIGINT. */
+    sigset_t mask;
     sigemptyset (&mask);
     sigaddset (&mask, SIGTERM);
     sigaddset (&mask, SIGINT);
@@ -28,7 +27,7 @@ int main (int argc, char *argv[])
     }
 
     /* Create a file descriptor from which we will read the signals. */
-    sfd = signalfd (-1, &mask, 0);
+    int sfd = signalfd (-1, &mask, SFD_CLOEXEC);
     if (sfd < 0) {
         perror ("signalfd");
         return 1;
@@ -40,9 +39,7 @@ int main (int argc, char *argv[])
          * about the signal we've read. */
         struct signalfd_siginfo si;
 
-        ssize_t res;
-
-        res = read (sfd, &si, sizeof(si));
+        ssize_t res = read (sfd, &si, sizeof(si));
 
         if (res < 0) {
             perror ("read");
