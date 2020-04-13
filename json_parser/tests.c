@@ -64,6 +64,12 @@ CTEST2(json_test, array_mixed) {
     READ_FILE("files/test4.json");
     PARSE_OK();
     json_Iter iter = json_Parser_getArrayIter(&data->parser, NULL);
-    ASSERT_TRUE(json_Iter_check_schema(&iter, "ssso(ss"));
+    ASSERT_TRUE(json_Iter_check_schema(&iter, "ssso(ss)"));
 }
 
+CTEST2(json_test, numbers) {
+    const char text[] = "[ 2, -4, 6, -7 ]";
+    PARSE_OK();
+    json_Iter iter = json_Parser_getArrayIter(&data->parser, NULL);
+    ASSERT_TRUE(json_Iter_check_schema(&iter, "ssss"));
+}

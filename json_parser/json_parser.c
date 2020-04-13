@@ -256,12 +256,9 @@ static void json_JParser_parseArray(json_JParser* p, uint32_t parent_idx) {
   while (1) {
     uint32_t node_idx = 0;
     switch (json_Token_getKind(&p->token)) {
-      case json_TokenKind_Kw_true:
-        __attribute__((fallthrough));
-      case json_TokenKind_Kw_false:
-        __attribute__((fallthrough));
-      case json_TokenKind_Kw_null:
-        __attribute__((fallthrough));
+      case json_TokenKind_Kw_true: __attribute__((fallthrough));
+      case json_TokenKind_Kw_false: __attribute__((fallthrough));
+      case json_TokenKind_Kw_null: __attribute__((fallthrough));
       case json_TokenKind_Text: {
         uint32_t value_idx = json_JParser_parseValue(p);
         node_idx = json_Data_addNode(p->data, json_NodeKind_Value, 0, value_idx);
@@ -277,14 +274,10 @@ static void json_JParser_parseArray(json_JParser* p, uint32_t parent_idx) {
         break;
       case json_TokenKind_R_sbracket:
         break;
-      case json_TokenKind_R_brace:
-        __attribute__((fallthrough));
-      case json_TokenKind_Colon:
-        __attribute__((fallthrough));
-      case json_TokenKind_Comma:
-        __attribute__((fallthrough));
-      case json_TokenKind_Eof:
-        __attribute__((fallthrough));
+      case json_TokenKind_R_brace: __attribute__((fallthrough));
+      case json_TokenKind_Colon: __attribute__((fallthrough));
+      case json_TokenKind_Comma: __attribute__((fallthrough));
+      case json_TokenKind_Eof: __attribute__((fallthrough));
       case json_TokenKind_Error:
         sprintf(p->msg, "expected '{', '[' or text %s", json_JParser_diagLoc(p));
         longjmp(p->jmp_err, 1);
@@ -340,12 +333,9 @@ static void json_JParser_parseObject(json_JParser* p, uint32_t parent_idx) {
     json_JParser_expectAndConsume(p, json_TokenKind_Colon);
     uint32_t node_idx = 0;
     switch (json_Token_getKind(&p->token)) {
-      case json_TokenKind_Kw_true:
-        __attribute__((fallthrough));
-      case json_TokenKind_Kw_false:
-        __attribute__((fallthrough));
-      case json_TokenKind_Kw_null:
-        __attribute__((fallthrough));
+      case json_TokenKind_Kw_true: __attribute__((fallthrough));
+      case json_TokenKind_Kw_false: __attribute__((fallthrough));
+      case json_TokenKind_Kw_null: __attribute__((fallthrough));
       case json_TokenKind_Text: {
         uint32_t value_idx = json_JParser_parseValue(p);
         node_idx = json_Data_addNode(p->data, json_NodeKind_Value, name_idx, value_idx);
@@ -359,16 +349,11 @@ static void json_JParser_parseObject(json_JParser* p, uint32_t parent_idx) {
         node_idx = json_Data_addNode(p->data, json_NodeKind_Array, name_idx, 0);
         json_JParser_parseArray(p, node_idx);
         break;
-      case json_TokenKind_R_brace:
-        __attribute__((fallthrough));
-      case json_TokenKind_R_sbracket:
-        __attribute__((fallthrough));
-      case json_TokenKind_Colon:
-        __attribute__((fallthrough));
-      case json_TokenKind_Comma:
-        __attribute__((fallthrough));
-      case json_TokenKind_Eof:
-        __attribute__((fallthrough));
+      case json_TokenKind_R_brace: __attribute__((fallthrough));
+      case json_TokenKind_R_sbracket: __attribute__((fallthrough));
+      case json_TokenKind_Colon: __attribute__((fallthrough));
+      case json_TokenKind_Comma: __attribute__((fallthrough));
+      case json_TokenKind_Eof: __attribute__((fallthrough));
       case json_TokenKind_Error:
         sprintf(p->msg, "expected '{', '[' or text %s", json_JParser_diagLoc(p));
         longjmp(p->jmp_err, 1);
@@ -491,31 +476,21 @@ static void json_Tokenizer_lex(json_Tokenizer* t, json_Token* result) {
       case '"':
         json_Tokenizer_parseText(t, result);
         return;
-      case '0':
-        __attribute__((fallthrough));
-      case '1':
-        __attribute__((fallthrough));
-      case '2':
-        __attribute__((fallthrough));
-      case '3':
-        __attribute__((fallthrough));
-      case '4':
-        __attribute__((fallthrough));
-      case '5':
-        __attribute__((fallthrough));
-      case '6':
-        __attribute__((fallthrough));
-      case '7':
-        __attribute__((fallthrough));
-      case '8':
-        __attribute__((fallthrough));
+      case '-': __attribute__((fallthrough));
+      case '0': __attribute__((fallthrough));
+      case '1': __attribute__((fallthrough));
+      case '2': __attribute__((fallthrough));
+      case '3': __attribute__((fallthrough));
+      case '4': __attribute__((fallthrough));
+      case '5': __attribute__((fallthrough));
+      case '6': __attribute__((fallthrough));
+      case '7': __attribute__((fallthrough));
+      case '8': __attribute__((fallthrough));
       case '9':
         json_Tokenizer_parseNumber(t, result);
         return;
-      case 'f':
-        __attribute__((fallthrough));
-      case 'n':
-        __attribute__((fallthrough));
+      case 'f': __attribute__((fallthrough));
+      case 'n': __attribute__((fallthrough));
       case 't':
         json_Tokenizer_parseKeyword(t, result);
         return;
@@ -548,6 +523,7 @@ static void json_Tokenizer_parseText(json_Tokenizer* t, json_Token* result) {
 
 static void json_Tokenizer_parseNumber(json_Tokenizer* t, json_Token* result) {
   const char* start = t->current;
+  if (t->current[0] == '-') t->current++;
   while (((t->current[0] >= '0') && (t->current[0] <= '9'))) t->current++;
   uint32_t len = (uint32_t)((t->current - start));
   memcpy(t->msg, start, len);
@@ -592,30 +568,18 @@ static void json_Tokenizer_advance(json_Tokenizer* t, uint32_t amount) {
 
 static const char* json_getTokenName(json_TokenKind k) {
   switch (k) {
-    case json_TokenKind_Kw_true:
-      return "true";
-    case json_TokenKind_Kw_false:
-      return "false";
-    case json_TokenKind_Kw_null:
-      return "null";
-    case json_TokenKind_L_brace:
-      return "{";
-    case json_TokenKind_R_brace:
-      return "}";
-    case json_TokenKind_L_sbracket:
-      return "[";
-    case json_TokenKind_R_sbracket:
-      return "]";
-    case json_TokenKind_Colon:
-      return ":";
-    case json_TokenKind_Comma:
-      return ",";
-    case json_TokenKind_Text:
-      return "text";
-    case json_TokenKind_Eof:
-      return "eof";
-    case json_TokenKind_Error:
-      return "error";
+    case json_TokenKind_Kw_true: return "true";
+    case json_TokenKind_Kw_false: return "false";
+    case json_TokenKind_Kw_null: return "null";
+    case json_TokenKind_L_brace: return "{";
+    case json_TokenKind_R_brace: return "}";
+    case json_TokenKind_L_sbracket: return "[";
+    case json_TokenKind_R_sbracket: return "]";
+    case json_TokenKind_Colon: return ":";
+    case json_TokenKind_Comma: return ",";
+    case json_TokenKind_Text: return "text";
+    case json_TokenKind_Eof: return "eof";
+    case json_TokenKind_Error: return "error";
   }
   return "?";
 }
@@ -718,12 +682,9 @@ static void json_TextBuffer_dump(const json_TextBuffer* b, const char* text) {
 
 static const char* json_kind2str(json_NodeKind k) {
   switch (k) {
-    case json_NodeKind_Object:
-      return "<object>";
-    case json_NodeKind_Value:
-      return " <value>";
-    case json_NodeKind_Array:
-      return " <array>";
+    case json_NodeKind_Object: return "<object>";
+    case json_NodeKind_Value: return " <value>";
+    case json_NodeKind_Array: return " <array>";
   }
   return NULL;
 }
