@@ -296,7 +296,11 @@ static void json_JParser_parseArray(json_JParser* p, uint32_t parent_idx) {
     }
     prev_idx = node_idx;
     if (json_Token_isNot(&p->token, json_TokenKind_Comma)) break;
-    json_JParser_consumeToken(p);
+    json_Location commaLoc = json_JParser_consumeToken(p);
+    if (json_Token_is(&p->token, json_TokenKind_R_sbracket)) {
+        sprintf(p->msg, "superfluous comma %s", json_Location_str(&commaLoc));
+        longjmp(p->jmp_err, 1);
+    }
   }
   json_JParser_expectAndConsume(p, json_TokenKind_R_sbracket);
   p->inArray = 0;
@@ -525,6 +529,10 @@ static void json_Tokenizer_parseNumber(json_Tokenizer* t, json_Token* result) {
   const char* start = t->current;
   if (t->current[0] == '-') t->current++;
   while (((t->current[0] >= '0') && (t->current[0] <= '9'))) t->current++;
+  if (t->current[0] == '.') {
+    t->current++;
+    while (((t->current[0] >= '0') && (t->current[0] <= '9'))) t->current++;
+  }
   uint32_t len = (uint32_t)((t->current - start));
   memcpy(t->msg, start, len);
   t->msg[len] = 0;

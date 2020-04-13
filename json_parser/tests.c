@@ -60,6 +60,39 @@ CTEST2(json_test, obj_comma_at_end) {
     ASSERT_STR("superfluous comma at line 1:40", json_Parser_getDiag(&data->parser));
 }
 
+CTEST2(json_test, array_comma_at_end) {
+    const char text[] = "[ 1, 2, 3, ]";
+    PARSE_FAIL();
+    ASSERT_STR("superfluous comma at line 1:10", json_Parser_getDiag(&data->parser));
+}
+
+CTEST2(json_test, numbers) {
+    const char text[] = "[ 2, -4, 6, -7, 3.14, -9.87 ]";
+    PARSE_OK();
+    json_Iter iter = json_Parser_getArrayIter(&data->parser, NULL);
+    ASSERT_TRUE(json_Iter_check_schema(&iter, "ssssss"));
+    ASSERT_STR("2", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_STR("-4", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_STR("6", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_STR("-7", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_STR("3.14", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_STR("-9.87", json_Iter_getValue(&iter));
+    json_Iter_next(&iter);
+    ASSERT_TRUE(json_Iter_done(&iter));
+}
+
+CTEST2(json_test, keywords) {
+    const char text[] = "[ true, false, null ]";
+    PARSE_OK();
+    json_Iter iter = json_Parser_getArrayIter(&data->parser, NULL);
+    ASSERT_TRUE(json_Iter_check_schema(&iter, "sss"));
+}
+
 CTEST2(json_test, array_mixed) {
     READ_FILE("files/test4.json");
     PARSE_OK();
@@ -67,9 +100,3 @@ CTEST2(json_test, array_mixed) {
     ASSERT_TRUE(json_Iter_check_schema(&iter, "ssso(ss)"));
 }
 
-CTEST2(json_test, numbers) {
-    const char text[] = "[ 2, -4, 6, -7 ]";
-    PARSE_OK();
-    json_Iter iter = json_Parser_getArrayIter(&data->parser, NULL);
-    ASSERT_TRUE(json_Iter_check_schema(&iter, "ssss"));
-}
