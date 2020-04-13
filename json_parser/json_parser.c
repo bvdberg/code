@@ -512,6 +512,12 @@ static void json_Tokenizer_parseText(json_Tokenizer* t, json_Token* result) {
   const char* start = t->current;
   while ((t->current[0] && (t->current[0] != '"'))) t->current++;
   uint32_t len = (uint32_t)((t->current - start));
+  if (len >= json_MAX_TEXT) {
+        sprintf(t->msg, "text too long %u (max %u) %s", len, json_MAX_TEXT, json_Location_str(&t->loc));
+        json_Token_setKind(result, json_TokenKind_Error);
+        json_Token_setData(result, t->msg);
+        return;
+  }
   memcpy(t->msg, start, len);
   t->msg[len] = 0;
   json_Token_setKind(result, json_TokenKind_Text);
