@@ -124,18 +124,21 @@ static void json_Location_set(json_Location* loc, uint32_t l, uint32_t c);
 static const char* json_Location_str(const json_Location* loc);
 static void json_TextBuffer_init(json_TextBuffer* b, uint32_t size);
 static void json_TextBuffer_destroy(json_TextBuffer* b);
+static void json_TextBuffer_reset(json_TextBuffer* b);
 static void json_TextBuffer_resize(json_TextBuffer* b, uint32_t cap2);
 static uint32_t json_TextBuffer_add(json_TextBuffer* b, const char* text, uint32_t len);
 static void json_TextBuffer_dump(const json_TextBuffer* b, const char* text);
 static const char* json_kind2str(json_NodeKind k);
 static void json_NodeBuffer_init(json_NodeBuffer* b, uint32_t size);
 static void json_NodeBuffer_destroy(json_NodeBuffer* b);
+static void json_NodeBuffer_reset(json_NodeBuffer* b);
 static uint32_t json_NodeBuffer_getSize(const json_NodeBuffer* b);
 static void json_NodeBuffer_resize(json_NodeBuffer* b, uint32_t cap2);
 static uint32_t json_NodeBuffer_add(json_NodeBuffer* b, json_NodeKind kind, uint32_t name_idx, uint32_t value_idx);
 static void json_NodeBuffer_dump(const json_NodeBuffer* b);
 static json_Data* json_Data_create();
 static void json_Data_destroy(json_Data* d);
+static void json_Data_reset(json_Data* d);
 static uint32_t json_Data_addName(json_Data* d, const char* name, uint32_t len);
 static uint32_t json_Data_addValue(json_Data* d, const char* value, uint32_t len);
 static uint32_t json_Data_addNode(json_Data* d, json_NodeKind kind, uint32_t name_idx, uint32_t value_idx);
@@ -150,21 +153,17 @@ static char json_Iter_check_schema_priv(const json_Iter* i, const char** schema)
 static const char* json_indent(uint32_t i);
 
 void json_Parser_init(json_Parser* p) {
-  p->data = NULL;
+  p->data = json_Data_create();
   p->message[0] = 0;
 }
 
 void json_Parser_destroy(json_Parser* p) {
-  if (p->data)
-  {
-    json_Data_destroy(p->data);
-    p->data = NULL;
-  }
+  json_Data_destroy(p->data);
+  p->data = NULL;
 }
 
 int json_Parser_parse(json_Parser* p, const char* text) {
-  if (p->data) json_Data_destroy(p->data);
-  p->data = json_Data_create();
+  json_Data_reset(p->data);
   p->message[0] = 0;
   json_JParser parser;
   return json_JParser_parse(&parser, text, p->message, p->data);
@@ -666,6 +665,11 @@ static void json_TextBuffer_destroy(json_TextBuffer* b) {
   free(b->data);
 }
 
+static void json_TextBuffer_reset(json_TextBuffer* b) {
+    b->cur = 1;
+    b->data[0] = 0;
+}
+
 static void json_TextBuffer_resize(json_TextBuffer* b, uint32_t cap2) {
   b->cap = cap2;
   char* data2 = malloc(b->cap);
@@ -711,6 +715,10 @@ static void json_NodeBuffer_init(json_NodeBuffer* b, uint32_t size) {
 
 static void json_NodeBuffer_destroy(json_NodeBuffer* b) {
   free(b->data);
+}
+
+static void json_NodeBuffer_reset(json_NodeBuffer* b) {
+    b->cur = 1;
 }
 
 static uint32_t json_NodeBuffer_getSize(const json_NodeBuffer* b) {
@@ -771,6 +779,12 @@ static void json_Data_destroy(json_Data* d) {
   json_TextBuffer_destroy(&d->values);
   json_NodeBuffer_destroy(&d->nodes);
   free(d);
+}
+
+static void json_Data_reset(json_Data* d) {
+    json_TextBuffer_reset(&d->names);
+    json_TextBuffer_reset(&d->values);
+    json_NodeBuffer_reset(&d->nodes);
 }
 
 static uint32_t json_Data_addName(json_Data* d, const char* name, uint32_t len) {
