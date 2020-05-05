@@ -21,6 +21,9 @@ int main(int argc, const char *argv[])
     tm = localtime(&now);
     printf("TM: [%10lu] %d-%d-%d %02d:%02d:%02d\n", now, tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
     
+    now = ((unsigned)(-1))/2;
+    tm = localtime(&now);
+    printf("TM: [%10lu] %d-%d-%d %02d:%02d:%02d\n", now, tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
     
     now = (unsigned)(-1);
     tm = localtime(&now);
