@@ -6,5 +6,12 @@
 #include "config_b.h"
 //#include "config_c.h"
 
+
+// --- SUB-CONFIGS ---
+
+#ifdef FEATURE_2
+#define FEATURE_X
+#endif
+
 #endif
 
