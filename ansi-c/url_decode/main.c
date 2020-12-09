@@ -32,6 +32,8 @@ typedef struct {
     char* filename;
 } url_t;
 
+static bool has_file = true;
+
 static char *rev_index(char *s, char c)
 {
     char* res = NULL;
@@ -43,7 +45,7 @@ static char *rev_index(char *s, char c)
 }
 
 // input should be like "ftp://username:password@hostname:port/path/file"
-static bool decode_url(url_t* url, char* input) {
+static bool parse_url(url_t* url, char* input, bool expect_file) {
     memset(url, 0, sizeof(url_t));
     char* cp = input;
 
@@ -92,6 +94,11 @@ static bool decode_url(url_t* url, char* input) {
     cp++;
     url->path = cp;
 
+    if (!expect_file) {
+        if (url->path[0] == 0) return false;
+        return true;
+    }
+
     char* file = rev_index(cp, '/');
     if  (file) {
         *file = 0;
@@ -121,7 +128,7 @@ static void test(const char* input) {
     char str[MAX_URL_LEN];
     strcpy(str, input);
     url_t url;
-    bool ok = decode_url(&url, str);
+    bool ok = parse_url(&url, str, has_file);
     if (!ok) {
         printf("%sinvalid url%s\n", ANSI_RED, ANSI_NORMAL);
     }
@@ -136,6 +143,7 @@ int main(int argc, const char *argv[])
     test("hostname/path/file.bin");
     test("user@hostname/file.bin");
     test("user@hostname/");
+    test("ftp://ecotap:ecotap123@192.168.178.18:21/upload");
     return 0;
 }
 
