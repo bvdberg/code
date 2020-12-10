@@ -88,7 +88,10 @@ static bool parse_url(url_t* url, char* input, bool expect_file) {
 
     url->path = cp;
     cp = strstr(cp, "/");
-    if (!cp) return false;
+    if (!cp) {
+        url->path = NULL;
+        return true;
+    }
 
     *cp = 0;
     cp++;
@@ -144,6 +147,9 @@ int main(int argc, const char *argv[])
     test("user@hostname/file.bin");
     test("user@hostname/");
     test("ftp://ecotap:ecotap123@192.168.178.18:21/upload");
+    test("ftp://ecotap:ecotap123@192.168.178.18/EVC50V32R17-DC.bin");
+    test("ftp://pi:lmspi@10.20.30.40");
+    test("10.20.30.40");
     return 0;
 }
 
