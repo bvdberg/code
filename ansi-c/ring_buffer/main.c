@@ -73,6 +73,10 @@ int main(int argc, const char *argv[])
     add(&rb, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     get(&rb, 30);
 
+    ringbuf_flush(&rb);
+    add(&rb, "567890123");
+    get(&rb, 60);
+
 
     return 0;
 }

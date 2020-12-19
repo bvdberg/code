@@ -43,6 +43,7 @@ unsigned ringbuf_get_mult(ringbuf_t* rb, uint8_t* data, unsigned max) {
 
     uint32_t cnt1 = rb->bufsize - rb->head;
     if (max < cnt1) cnt1 = max;
+    if (cnt1 > retrieved) cnt1 = retrieved;
     memcpy(data, &rb->buf[rb->head], cnt1);
 
     uint32_t cnt2 = retrieved - cnt1;
