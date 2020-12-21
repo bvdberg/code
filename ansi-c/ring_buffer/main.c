@@ -71,6 +71,7 @@ int main(int argc, const char *argv[])
     add(&rb, "1234567890acbdefghij");
     get(&rb, 20);
     add(&rb, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    get(&rb, 0);
     get(&rb, 30);
 
     ringbuf_flush(&rb);
