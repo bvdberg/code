@@ -45,6 +45,8 @@ int main(int argc, const char *argv[])
     put(p3);
     void* p5 = get(136);
 
+    put(p4);
+    put(p2);
 
     return 0;
 }

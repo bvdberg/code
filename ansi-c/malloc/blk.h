@@ -5,7 +5,7 @@
 
 void blk_init();
 
-// NOTE: malloc/free must be in 32-bytes multiples! (size of blk_t)
+// NOTE: malloc/free must be in 24-bytes multiples! (size of blk_t)
 void* blk_malloc(uint32_t size);
 
 void blk_free(void* ptr);
