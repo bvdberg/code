@@ -53,6 +53,7 @@ void* blk_malloc(uint32_t size) {
 }
 
 void blk_free(void* ptr) {
+    if (ptr == NULL) return;
     blk_t* b = to_container(ptr, blk_t, data);
     b->size &= ~1;
     if (b->list.next != &blocks) { // last block
