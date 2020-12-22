@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 bool read_number(const char** line, uint32_t* num) {
     // read  max 10 chars
@@ -20,17 +21,20 @@ bool read_number(const char** line, uint32_t* num) {
 }
 
 
+
 bool ipaddrconv(const char *str, uint8_t* ipaddr)
 {
     for (unsigned i = 0; i < 4; ++i) {
         uint32_t num = 0;
-        if (!read_number(&str, &num)) return false;
-        if (num > 255) return false;
+        if (!read_number(&str, &num) || num> 255) goto err;
         ipaddr[i] = (uint8_t)num;
-        if (i < 3 && str[0] != '.') return false;
+        if (i < 3 && str[0] != '.') goto err;
         str++;
     }
     return true;
+err:
+    memset(ipaddr, 0, 4);
+    return false;
 }
 
 static void test(const char* str) {
