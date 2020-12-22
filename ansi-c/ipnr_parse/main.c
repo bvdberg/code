@@ -20,21 +20,18 @@ bool read_number(const char** line, uint32_t* num) {
     return (count != 0);
 }
 
-
-
 bool ipaddrconv(const char *str, uint8_t* ipaddr)
 {
+    uint8_t tmp[4];
     for (unsigned i = 0; i < 4; ++i) {
         uint32_t num = 0;
-        if (!read_number(&str, &num) || num> 255) goto err;
-        ipaddr[i] = (uint8_t)num;
-        if (i < 3 && str[0] != '.') goto err;
+        if (!read_number(&str, &num) || num> 255) return false;
+        tmp[i] = (uint8_t)num;
+        if (i < 3 && str[0] != '.') return false;
         str++;
     }
+    memcpy(ipaddr, tmp, 4);
     return true;
-err:
-    memset(ipaddr, 0, 4);
-    return false;
 }
 
 static void test(const char* str) {
