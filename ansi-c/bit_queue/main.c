@@ -31,7 +31,7 @@ static void check(void) {
     if (pending == 0) return;
 
     while (pending) {
-        if (pending |= BIT(head)) {
+        if (pending & BIT(head)) {
             if ((busy & BIT(head)) != 0) return;
             printf("%s-> free %u%s\n", ANSI_BLUE, head, ANSI_NORMAL);
             pending &= ~BIT(head);
