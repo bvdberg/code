@@ -43,5 +43,7 @@ unsigned ringbuf_add_mult(ringbuf_t* rb, const uint8_t* data, unsigned num);
 //  return number of retrieved items
 unsigned ringbuf_get_mult(ringbuf_t* rb, uint8_t* data, unsigned max);
 
+unsigned ringbuf_peek_tail(const ringbuf_t* rb, uint8_t* data, unsigned max);
+
 #endif
 

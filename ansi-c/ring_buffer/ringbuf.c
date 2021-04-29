@@ -54,3 +54,19 @@ unsigned ringbuf_get_mult(ringbuf_t* rb, uint8_t* data, unsigned max) {
     return retrieved;
 }
 
+unsigned ringbuf_peek_tail(const ringbuf_t* rb, uint8_t* data, unsigned max) {
+    if (ringbuf_isempty(rb)) return 0;
+
+    uint32_t retrieved = MIN(rb->count, max);
+    uint32_t head2 = (rb->head + rb->count - retrieved + rb->bufsize) % rb->bufsize;
+    uint32_t cnt1 = rb->bufsize - head2;
+    if (max < cnt1) cnt1 = max;
+    if (cnt1 > retrieved) cnt1 = retrieved;
+    memcpy(data, &rb->buf[head2], cnt1);
+
+    uint32_t cnt2 = retrieved - cnt1;
+    if (cnt2) memcpy(&data[cnt1], &rb->buf[0], cnt2);
+
+    return retrieved;
+}
+

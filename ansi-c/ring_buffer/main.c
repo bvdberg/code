@@ -48,6 +48,14 @@ static void flush(ringbuf_t* rb) {
     dump(rb);
 }
 
+static void peek(ringbuf_t* rb, uint32_t len) {
+    uint8_t tail[40];
+    len = ringbuf_peek_tail(rb, tail, len);
+    tail[len] = 0;
+    printf("%speek tail [%s]%s\n", ANSI_CYAN, tail, ANSI_NORMAL);
+    dump(rb);
+}
+
 int main(int argc, const char *argv[])
 {
     ringbuf_t rb;
@@ -58,14 +66,17 @@ int main(int argc, const char *argv[])
 
     dump(&rb);
     add(&rb, "a");
+    peek(&rb, 4);
     ringbuf_add(&rb, 'b');
     add(&rb, "defghijk");
+    peek(&rb, 4);
     add(&rb, "-1234567890-");
     add(&rb, "ABCDEFGHIJKLMNOPQ");
     get(&rb, 9);
     add(&rb, "1234");
     add(&rb, "567890123");
     get(&rb, 22);
+    peek(&rb, 10);
     get(&rb, 15);
     flush(&rb);
     add(&rb, "1234567890acbdefghij");
@@ -77,6 +88,9 @@ int main(int argc, const char *argv[])
     ringbuf_flush(&rb);
     add(&rb, "567890123");
     get(&rb, 60);
+
+    add(&rb, "567890123");
+    peek(&rb, 4);
 
 
     return 0;
