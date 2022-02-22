@@ -1,8 +1,3 @@
-/*
- * Copyright INBRAIN-Neuroelectronics 2021-2022
- * All rights reserved
- */
-
 #include "ringbuf_lf.h"
 
 #include <string.h>

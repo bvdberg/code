@@ -1,8 +1,3 @@
-/*
- * Copyright INBRAIN-Neuroelectronics 2021-2022
- * All rights reserved
- */
-
 #ifndef RING_BUF_LF_H
 #define RING_BUF_LF_H
 
