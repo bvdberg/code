@@ -43,7 +43,7 @@ void buffer_add(Buffer* buf, int amount) {
     if (beforeWrap >= amount) { // no wraparound
         buf->putIndex += amount;
     } else {
-        buf->putIndex += amount; 
+        buf->putIndex += amount;
         buf->putIndex = buf->putIndex % buf->size;
     }
 }
