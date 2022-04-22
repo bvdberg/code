@@ -16,6 +16,6 @@ void SpaceShip::initiateHyperwarp() {}
 void SpaceShip::doSomethingInternal() {}
 
 SpaceShip::FluxLevel SpaceShip::checkFluxLevel(size_t ionFluxerIdx) {
-
+    return 0;
 }
 
