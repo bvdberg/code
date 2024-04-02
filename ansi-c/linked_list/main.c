@@ -12,7 +12,7 @@ static void dump(list_t const list)
     printf("size = %d\n", (int)list_count(list));
     list_t node = list->next;
     while (node != list) {
-        Value* v = list_entry(node, Value, tag);
+        Value* v = to_container(node, Value, tag);
         printf("  %d\n", v->value);
         node = node->next;
     }
@@ -43,7 +43,7 @@ int main(int argc, const char *argv[])
 
     while (!list_empty(&values)) {
         list_t head = list_pop_front(&values);
-        Value* v = list_entry(head, Value, tag);
+        Value* v = to_container(head, Value, tag);
         printf("pop %d\n", v->value);
     }
 

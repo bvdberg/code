@@ -13,19 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef EVENT_H
-#define EVENT_H
+#ifndef EVENTS_H
+#define EVENTS_H
 
 #include <stdint.h>
+#include "list.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-uint64_t current_time();
+#define USEC(x) (x)
+#define MSEC(x) (1000lu * (x))
+#define SEC(x) (1000000lu * (x))
 
-// NOTE: all functions should be called from same thread
+// NOTE: all functions should be called from same thread! (except where specified below)
+
+uint64_t events_now(void);
+
+// ------ base ------
 
 typedef struct event_base_t_ event_base_t;
 
@@ -38,13 +44,15 @@ void events_single_loop_no_timers(event_base_t* base);
 
 void events_free(event_base_t* base);
 
+// Thread-safe, may be called from any context
 void events_loopbreak(event_base_t* base, uint8_t return_value);
 
 int events_is_loopbroken(event_base_t* base);
 
 int events_get_return_code(event_base_t* base);
 
-// events
+// ------ events ------
+
 typedef void (*event_func_t)(int fd, void* arg, short flags);
 
 struct event_t_;
@@ -53,8 +61,8 @@ typedef struct event_t_ event_t;
 // struct fields are for internal use only. Others should consider this an opaque struct
 struct event_t_
 {
+    struct list_tag list;
     int fd;
-    event_t* next;
     event_base_t* base;
     event_func_t handler;
     void* handler_arg;
@@ -73,7 +81,8 @@ void events_del(event_t* ev);
 // may be done while event is active
 void events_update_flags(event_t* ev, short flags);
 
-// timers
+// ------ timers ------
+
 struct etimer_t_;
 typedef struct etimer_t_  etimer_t;
 
@@ -82,28 +91,40 @@ typedef void (*timer_func_t)(void* arg);
 // struct fields are for internal use only. Others should consider this an opaque struct
 struct etimer_t_
 {
-    etimer_t* next;
+    struct list_tag list;
     uint64_t timeout;
     event_base_t* base;
     timer_func_t handler;
     void* handler_arg;
     uint64_t interval_usec;
     unsigned flags;
+    char name[255];
 };
 
 #define TIMER_PERSIST 0x1
-void timer_assign(etimer_t* timer, event_base_t* base, unsigned flags, timer_func_t fn, void* arg);
+
+void timer_assign(etimer_t* timer, event_base_t* base, const char* name, unsigned flags, timer_func_t fn, void* arg);
 
 int timer_active(etimer_t* timer);
 
 void timer_add(etimer_t* timer, uint64_t delay_usec);
 
+void timer_add_offset(etimer_t* timer, uint64_t delay_usec, uint64_t offset);
+
 void timer_add_absolute(etimer_t* timer, uint64_t timeout);
 
 void timer_del(etimer_t* timer);
 
-#define SEC(x) ((x) * 1000000u)
-#define MSEC(x) ((x) * 1000u)
+// Functions below are thread-safe, so they may be called from other threads/signal context
+
+typedef void (*events_cb_t)(void* arg1, void* arg2);
+
+void events_schedule_safe(event_base_t* base, events_cb_t func, void* arg1, void* arg2);
+
+void timer_add_safe(etimer_t* timer, uint64_t delay_usec);
+
+void timer_del_safe(etimer_t* timer);
+void timer_dump(event_base_t* base);
 
 #ifdef __cplusplus
 }

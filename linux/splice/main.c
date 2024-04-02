@@ -78,16 +78,16 @@ int main(int argc, const char *argv[])
         events_assign(&event, base, fd[0], EV_READ, on_read, base);
         events_add(&event);
         log_info("child: start");
-        uint64_t t1 = current_time();
+        uint64_t t1 = events_now();
         uint8_t ret = events_mainloop(base);
-        uint64_t t2 = current_time();
+        uint64_t t2 = events_now();
         log_info("child: done (%llu usec)", t2 - t1);
         log_info("child: %u MB/sec", total_size / (t2 - t1));
     } else { // parent
         parent = 1;
         close(fd[0]);   // close read-end
 
-        uint64_t t1 = current_time();
+        uint64_t t1 = events_now();
         log_info("parent: start");
 #if 0
         // use read-write
@@ -114,7 +114,7 @@ int main(int argc, const char *argv[])
             if (total_written == total_size) break;
         }
 #endif
-        uint64_t t2 = current_time();
+        uint64_t t2 = events_now();
         log_info("parent: done (%llu usec)", t2 - t1);
         close(fd2);
         sleep(1);   // wait for child
