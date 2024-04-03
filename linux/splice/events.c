@@ -379,7 +379,7 @@ void timer_assign(etimer_t* timer, event_base_t* base, const char* name, unsigne
     timer->handler_arg = arg;
     timer->flags = flags;
     timer->interval_usec = 0;
-    strncpy(timer->name, name, sizeof(timer->name));
+    strncpy(timer->name, name, sizeof(timer->name)-1);
     list_init(&timer->list);
 }
 
