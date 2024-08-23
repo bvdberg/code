@@ -3,6 +3,6 @@
   "version": "0.0.1",
   "description": "my first socket.io app",
   "dependencies": {
-    "websocket": "^1.0.28"
+    "websocket": "^1.0.35"
   }
 }

@@ -42,6 +42,8 @@ int main() {
     mysqrt(4);
     mysqrt(16);
     mysqrt(100);
+    mysqrt(600);
+    mysqrt(1000);
     return 0;
 }
 

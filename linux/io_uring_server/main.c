@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "logger.h"
+
 #define DEFAULT_SERVER_PORT     8000
 #define QUEUE_DEPTH             256
 #define READ_SZ                 8192
@@ -74,7 +76,7 @@ static int setup_listening_socket(int port) {
 
 
 static void add_timeout_request(void) {
-    printf("add timeout\n");
+    log_info("add timeout");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     unsigned count = 1;
     unsigned flags = 0;
@@ -90,7 +92,7 @@ static void add_timeout_request(void) {
 }
 
 static void add_accept_request(int server_socket, struct sockaddr_in *client_addr, socklen_t *client_addr_len) {
-    printf("add accept\n");
+    log_info("add accept");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     io_uring_prep_accept(sqe, server_socket, (struct sockaddr *) client_addr,
                          client_addr_len, 0);
@@ -101,7 +103,7 @@ static void add_accept_request(int server_socket, struct sockaddr_in *client_add
 }
 
 static void add_read_request(int client_socket) {
-    printf("add read\n");
+    log_info("add read");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     // TODO get from pool
     Request *req = malloc(sizeof(*req) + sizeof(struct iovec));
@@ -117,7 +119,7 @@ static void add_read_request(int client_socket) {
 }
 
 static void add_write_request(Request *req) {
-    printf("add write\n");
+    log_info("add write");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     req->event_type = EVENT_TYPE_WRITE;
     io_uring_prep_writev(sqe, req->client_socket, req->iov, req->iovec_count, 0);
@@ -126,7 +128,7 @@ static void add_write_request(Request *req) {
 }
 
 static void add_close_request(Request *req) {
-    printf("add close\n");
+    log_info("add close");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     req->event_type = EVENT_TYPE_CLOSE;
     io_uring_prep_close(sqe, req->client_socket);
@@ -188,7 +190,7 @@ void server_loop(int server_socket) {
 
         Request *req = (Request*) cqe->user_data;
         if (cqe->res < 0) {
-            fprintf(stderr, "Async request failed: %s for event: %d\n",
+            log_warn("Async request failed: %s for event: %d",
                     strerror(-cqe->res), req->event_type);
             exit(1);
         }
@@ -196,16 +198,16 @@ void server_loop(int server_socket) {
         // TODO fix malloc/freeing of Requests all the time
         switch (req->event_type) {
             case EVENT_TYPE_ACCEPT:
-                printf("complete: accept\n");
+                log_info("complete: accept");
                 add_accept_request(server_socket, &client_addr, &client_addr_len);
                 add_read_request(cqe->res);
                 add_timeout_request(); // wil also submit
                 free(req);
                 break;
             case EVENT_TYPE_READ:
-                printf("complete: read\n");
+                log_info("complete: read");
                 if (cqe->res <= 0) {
-                    fprintf(stderr, "Empty request! (connection closed)\n"); // connection closed
+                    log_warn("Empty request! (connection closed)"); // connection closed
                     // TODO also handle via
                     add_close_request(req);
                     //free(req->iov[0].iov_base);
@@ -217,7 +219,7 @@ void server_loop(int server_socket) {
                 }
                 break;
             case EVENT_TYPE_WRITE:
-                printf("complete: write\n");
+                log_info("complete: write");
                 for (int i = 0; i < req->iovec_count; i++) {
                     free(req->iov[i].iov_base);
                 }
@@ -225,14 +227,14 @@ void server_loop(int server_socket) {
                 free(req);
                 break;
             case EVENT_TYPE_CLOSE:
-                printf("complete: close\n");
+                log_info("complete: close");
                 free(req);
                 break;
             case EVENT_TYPE_TIMEOUT:
-                printf("complet: timeout\n");
+                log_info("complet: timeout");
                 break;
             default:
-                fprintf(stderr, "Unexpected req type %d\n", req->event_type);
+                log_warn("Unexpected req type %d", req->event_type);
                 break;
         }
         /* Mark this request as processed */
@@ -241,17 +243,18 @@ void server_loop(int server_socket) {
 }
 
 void sigint_handler(int signo) {
-    printf("^C pressed. Shutting down.\n");
+    log_info("^C pressed. Shutting down.");
     io_uring_queue_exit(&ring);
     exit(0);
 }
 
 int main() {
+    log_init(Info, true, true);
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
 
     signal(SIGINT, sigint_handler);
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
-    printf("listening on port %d\n", DEFAULT_SERVER_PORT);
+    log_info("listening on port %d", DEFAULT_SERVER_PORT);
     server_loop(server_socket);
 
     return 0;

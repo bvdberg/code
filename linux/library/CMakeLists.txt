@@ -11,7 +11,7 @@ add_library(bar SHARED
 )
 target_link_libraries(bar m)
 
-add_library(foo SHARED
+add_library(foo STATIC
     mod1.c
 )
 target_link_libraries(foo bar)
