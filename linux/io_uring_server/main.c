@@ -8,6 +8,7 @@
 #include <liburing.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "logger.h"
 
@@ -21,6 +22,16 @@
 #define EVENT_TYPE_CLOSE        3
 #define EVENT_TYPE_TIMEOUT      4
 
+
+static uint64_t now() {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    uint64_t now64 = now.tv_sec;
+    now64 *= 1000000;
+    now64 += (now.tv_nsec / 1000);
+    return now64;
+}
+
 typedef struct {
     int event_type;
     int iovec_count;
@@ -29,6 +40,9 @@ typedef struct {
 } Request;
 
 struct io_uring ring;
+static Request timer_request;
+static uint64_t interval_end;
+
 
 void fatal_error(const char *syscall) {
     perror(syscall);
@@ -75,16 +89,24 @@ static int setup_listening_socket(int port) {
 
 
 
-static void add_timeout_request(void) {
+static void add_timeout_request(Request* req) {
     log_info("add timeout");
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    unsigned count = 1;
+    unsigned count = 0;
     unsigned flags = 0;
     // note: ts must remain alive until submitted!
     struct __kernel_timespec ts = { .tv_sec = 1, .tv_nsec = 0 };
+    uint64_t current_time = now();
 
-    Request *req = malloc(sizeof(*req));
+    assert(interval_end > current_time);
+    uint64_t delay = interval_end - current_time;
+    log_info("delay %ld", delay);
+    ts.tv_sec = 0;
+    ts.tv_nsec = delay * 1000;
+
     req->event_type = EVENT_TYPE_TIMEOUT;
+    req->iovec_count = 0;
+    //MULTISHOT available in Linux 6.4.
     //flags = IORING_TIMEOUT_MULTISHOT;
     io_uring_prep_timeout(sqe, &ts, count, flags);
     io_uring_sqe_set_data(sqe, req);
@@ -182,7 +204,9 @@ void server_loop(int server_socket) {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 
+    interval_end = now() + 1000000;
     add_accept_request(server_socket, &client_addr, &client_addr_len);
+    add_timeout_request(&timer_request); // will also submit
 
     while (1) {
         int ret = io_uring_wait_cqe(&ring, &cqe);
@@ -190,9 +214,12 @@ void server_loop(int server_socket) {
 
         Request *req = (Request*) cqe->user_data;
         if (cqe->res < 0) {
-            log_warn("Async request failed: %s for event: %d",
-                    strerror(-cqe->res), req->event_type);
-            exit(1);
+            // Note: timeout always seems to have a negative result value
+            if (req->event_type != EVENT_TYPE_TIMEOUT) {
+                log_warn("Async request failed: %s for event: %d",
+                        strerror(-cqe->res), req->event_type);
+                exit(1);
+            }
         }
 
         // TODO fix malloc/freeing of Requests all the time
@@ -201,7 +228,6 @@ void server_loop(int server_socket) {
                 log_info("complete: accept");
                 add_accept_request(server_socket, &client_addr, &client_addr_len);
                 add_read_request(cqe->res);
-                add_timeout_request(); // wil also submit
                 free(req);
                 break;
             case EVENT_TYPE_READ:
@@ -231,7 +257,9 @@ void server_loop(int server_socket) {
                 free(req);
                 break;
             case EVENT_TYPE_TIMEOUT:
-                log_info("complet: timeout");
+                log_info("complete: timeout");
+                interval_end += 1000000;
+                add_timeout_request(req);
                 break;
             default:
                 log_warn("Unexpected req type %d", req->event_type);
