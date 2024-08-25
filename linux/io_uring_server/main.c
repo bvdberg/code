@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <liburing.h>
@@ -14,14 +15,9 @@
 
 #define DEFAULT_SERVER_PORT     8000
 #define QUEUE_DEPTH             256
-#define READ_SZ                 8192
-
-#define EVENT_TYPE_ACCEPT       0
-#define EVENT_TYPE_READ         1
-#define EVENT_TYPE_WRITE        2
-#define EVENT_TYPE_CLOSE        3
-#define EVENT_TYPE_TIMEOUT      4
-
+#define READ_SZ                 4096
+#define WRITE_SZ                4096
+#define MAX_SQE_PER_LOOP 10
 
 static uint64_t now() {
     struct timespec now;
@@ -32,30 +28,64 @@ static uint64_t now() {
     return now64;
 }
 
+typedef bool (*HandlerFn)(void* r, int len);
+
 typedef struct {
-    int event_type;
-    int iovec_count;
-    int client_socket;
-    struct iovec iov[];
+    HandlerFn handler;
 } Request;
 
-struct io_uring ring;
-static Request timer_request;
-static uint64_t interval_end;
+typedef struct {
+    Request req;    // must be first
+    struct __kernel_timespec ts;
+    uint64_t interval_end;
+    uint64_t interval;
+} TimeoutRequest;
 
+typedef struct {
+    Request req;    // must be first
+    int fd;
+    struct iovec iov;
+} ReadRequest;
+
+typedef struct {
+    Request req;    // must be first
+    int fd;
+    struct iovec iov;
+} WriteRequest;
+
+typedef struct {
+    Request req;    // must be first
+    int fd;
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len;
+} AcceptRequest;
+
+struct io_uring ring;
+
+static TimeoutRequest timer_request;
+static AcceptRequest accept_request;
+static ReadRequest read_request; // for stdin
+
+
+static bool on_write(void* arg, int res);
+
+// TODO use pool for get_write/put_write
+static WriteRequest* get_write(void) {
+    WriteRequest* req = malloc(sizeof(WriteRequest));
+    req->iov.iov_base = malloc(WRITE_SZ);
+    req->iov.iov_len = WRITE_SZ;
+    req->req.handler = on_write;
+    return req;
+}
+
+static void put_write(WriteRequest* req) {
+    free(req->iov.iov_base);
+    free(req);
+}
 
 void fatal_error(const char *syscall) {
     perror(syscall);
     exit(1);
-}
-
-void *zh_malloc(size_t size) {
-    void *buf = malloc(size);
-    if (!buf) {
-        fprintf(stderr, "Fatal error: unable to allocate memory.\n");
-        exit(1);
-    }
-    return buf;
 }
 
 static int setup_listening_socket(int port) {
@@ -87,186 +117,162 @@ static int setup_listening_socket(int port) {
     return sock;
 }
 
-
-
-static void add_timeout_request(Request* req) {
-    log_info("add timeout");
+static void add_timeout_request(TimeoutRequest* req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     unsigned count = 0;
     unsigned flags = 0;
-    // note: ts must remain alive until submitted!
-    struct __kernel_timespec ts = { .tv_sec = 1, .tv_nsec = 0 };
     uint64_t current_time = now();
 
-    assert(interval_end > current_time);
-    uint64_t delay = interval_end - current_time;
-    log_info("delay %ld", delay);
-    ts.tv_sec = 0;
-    ts.tv_nsec = delay * 1000;
-
-    req->event_type = EVENT_TYPE_TIMEOUT;
-    req->iovec_count = 0;
-    //MULTISHOT available in Linux 6.4.
-    //flags = IORING_TIMEOUT_MULTISHOT;
-    io_uring_prep_timeout(sqe, &ts, count, flags);
+    assert(req->interval_end > current_time);
+    uint64_t delay = req->interval_end - current_time;
+    //log_info("delay %ld", delay);
+    req->ts.tv_sec = 0;
+    req->ts.tv_nsec = delay * 1000;
+    io_uring_prep_timeout(sqe, &req->ts, count, flags);
     io_uring_sqe_set_data(sqe, req);
-    io_uring_submit(&ring);
 }
 
-static void add_accept_request(int server_socket, struct sockaddr_in *client_addr, socklen_t *client_addr_len) {
-    log_info("add accept");
+static void add_accept_request(AcceptRequest* req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    io_uring_prep_accept(sqe, server_socket, (struct sockaddr *) client_addr,
-                         client_addr_len, 0);
-    Request *req = malloc(sizeof(*req));
-    req->event_type = EVENT_TYPE_ACCEPT;
+    io_uring_prep_accept(sqe, req->fd, (struct sockaddr *) &req->client_addr, &req->client_addr_len, 0);
     io_uring_sqe_set_data(sqe, req);
-    io_uring_submit(&ring);
 }
 
-static void add_read_request(int client_socket) {
-    log_info("add read");
+static void add_read_request(ReadRequest* req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    // TODO get from pool
-    Request *req = malloc(sizeof(*req) + sizeof(struct iovec));
-    req->iov[0].iov_base = malloc(READ_SZ);
-    req->iov[0].iov_len = READ_SZ;
-    req->event_type = EVENT_TYPE_READ;
-    req->client_socket = client_socket;
-    memset(req->iov[0].iov_base, 0, READ_SZ);
-    /* Linux kernel 5.5 has support for readv, but not for recv() or read() */
-    io_uring_prep_readv(sqe, client_socket, &req->iov[0], 1, 0);
+    io_uring_prep_readv(sqe, req->fd, &req->iov, 1, 0);
     io_uring_sqe_set_data(sqe, req);
-    io_uring_submit(&ring);
 }
 
-static void add_write_request(Request *req) {
-    log_info("add write");
+static void add_write_request(WriteRequest *req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    req->event_type = EVENT_TYPE_WRITE;
-    io_uring_prep_writev(sqe, req->client_socket, req->iov, req->iovec_count, 0);
+    io_uring_prep_writev(sqe, req->fd, &req->iov, 1, 0);
     io_uring_sqe_set_data(sqe, req);
-    io_uring_submit(&ring);
 }
 
-static void add_close_request(Request *req) {
-    log_info("add close");
+static void add_close_request(ReadRequest *req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    req->event_type = EVENT_TYPE_CLOSE;
-    io_uring_prep_close(sqe, req->client_socket);
-    io_uring_submit(&ring);
+    io_uring_prep_close(sqe, req->fd);
+    io_uring_sqe_set_data(sqe, req);
 }
 
-static void send_static_string_content(const char *str, int client_socket) {
-    Request *req = zh_malloc(sizeof(*req) + sizeof(struct iovec));
-    unsigned long slen = strlen(str);
-    req->iovec_count = 1;
-    req->client_socket = client_socket;
-    req->iov[0].iov_base = zh_malloc(slen);
-    req->iov[0].iov_len = slen;
-    memcpy(req->iov[0].iov_base, str, slen);
-    add_write_request(req);
-}
 
-static void dump(const char* data, size_t len) {
-    char buf[1024];
-    char* cp = buf;
-    for (int i = 0; i < 128; i++) {
-        if (data[i] == 0) break;
-        cp += sprintf(cp, "%02x ", data[i]);
+static bool on_read_stdin(void* arg, int res) {
+    if (res <= 0) {
+        log_warn("accept request failed: %s", strerror(-res));
+        exit(EXIT_FAILURE);
     }
-    printf("INCOMING %ld [%s]\n", len, buf);
+    int len = res;
+
+    ReadRequest* req = arg;
+    char* cp = req->iov.iov_base;
+    // TEMP strip NL
+    if (len > 1 && cp[len-1] == '\n') cp[len-1] = 0;
+    printf("READ STDIN %d/%ld [%s]\n", len, req->iov.iov_len, cp);
+    add_read_request(req);
+    return true;
 }
 
-static void handle_incoming(Request *req, int server_socket) {
-    /* Get the first line, which will be the request */
-    char* data = (char*)req->iov[0].iov_base;
-    size_t len = req->iov[0].iov_len;
-    dump(data, len);
-    int slen = strlen(data);
-    if (data[slen-2] == '\r') data[slen-2] = 0;
-    // slen not valid then
+static bool on_write(void* arg, int res) {
+    if (res <= 0) {
+        log_warn("write failed: %s", strerror(-res));
+        // TODO close connection, etc
+        exit(EXIT_FAILURE);
+    }
+    WriteRequest* req = arg;
+    //log_info("write[%d] done", req->fd);
+    put_write(req);
+    return false;
+}
 
-    // no overflow checking
-    char buf[128];
-    sprintf(buf, "ECHO '%s'\n", data);
-    send_static_string_content(buf, req->client_socket);
+static bool on_close(void* arg, int res) {
+    ReadRequest* req = arg;
+    log_info("closed[%d] %d", req->fd, res);
+    free(req);
+    return false;
+}
 
-    if (strcmp(data, "quit") == 0) {
+static bool on_timeout(void* arg, int len) {
+    TimeoutRequest* req = arg;
+    log_info("timeout");
+    req->interval_end += req->interval;
+    add_timeout_request(req);
+    return true;
+}
+
+static bool on_read_socket(void* arg, int res) {
+    ReadRequest* req = arg;
+    if (res <= 0) {
+        // TODO close socket
+        log_info("socket %d was closed", req->fd);
+        req->req.handler = on_close; // change handler
         add_close_request(req);
-    } else {
-        add_read_request(req->client_socket);
+        //log_warn("accept request failed: (%d) %s", res, strerror(-res));
+        return true;
     }
+
+    char* input = req->iov.iov_base;
+    int len = res;
+    // TEMP strip CR/NL
+    if (len > 2 && input[len-2] == '\r') input[len-2] = 0;
+    printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
+
+    add_read_request(req);
+    WriteRequest* wr = get_write();
+    wr->fd = req->fd;
+    char* output = wr->iov.iov_base;
+    wr->iov.iov_len = sprintf(output, "ECHO %s\n", input);
+
+    // TODO change handler? (to close socket, cancel read, etc)
+    add_write_request(wr);
+    return true;
 }
 
-void server_loop(int server_socket) {
-    struct io_uring_cqe *cqe;
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
+static bool on_accept(void* arg, int res) {
+    AcceptRequest* req = arg;
+    if (res <= 0) {
+        log_warn("accept request failed: %s", strerror(-res));
+        exit(EXIT_FAILURE);
+    }
+    add_accept_request(req);
 
-    interval_end = now() + 1000000;
-    add_accept_request(server_socket, &client_addr, &client_addr_len);
-    add_timeout_request(&timer_request); // will also submit
+    log_info("accept (res %d)", res);
+    ReadRequest* r2 = malloc(sizeof(ReadRequest));
+    r2->req.handler = on_read_socket;
+    r2->fd = res;
+    r2->iov.iov_base = malloc(READ_SZ);
+    r2->iov.iov_len = READ_SZ;
+    add_read_request(r2);
+    return true;
+}
+
+void server_loop(void) {
+    struct io_uring_cqe *cqe;
 
     while (1) {
         int ret = io_uring_wait_cqe(&ring, &cqe);
         if (ret < 0) fatal_error("io_uring_wait_cqe");
+        int submissions = 0;
 
-        Request *req = (Request*) cqe->user_data;
-        if (cqe->res < 0) {
-            // Note: timeout always seems to have a negative result value
-            if (req->event_type != EVENT_TYPE_TIMEOUT) {
-                log_warn("Async request failed: %s for event: %d",
-                        strerror(-cqe->res), req->event_type);
-                exit(1);
+        while (1) {
+            // TODO use multiple loops with peek (see RedHat blog)
+            Request *req = (Request*) cqe->user_data;
+            assert(req);
+            submissions += req->handler(req, cqe->res);
+            // dont use req anymore here, might be freed
+            io_uring_cqe_seen(&ring, cqe);
+            if (io_uring_sq_space_left(&ring) < MAX_SQE_PER_LOOP) break;
+
+            ret = io_uring_peek_cqe(&ring, &cqe);
+            if (ret <= 0) {
+                if (ret == -EAGAIN) break;     // no remaining work in completion queue
+                log_error("peek failed: (%d) %s", ret, strerror(-ret));
+                exit(EXIT_FAILURE);
             }
         }
-
-        // TODO fix malloc/freeing of Requests all the time
-        switch (req->event_type) {
-            case EVENT_TYPE_ACCEPT:
-                log_info("complete: accept");
-                add_accept_request(server_socket, &client_addr, &client_addr_len);
-                add_read_request(cqe->res);
-                free(req);
-                break;
-            case EVENT_TYPE_READ:
-                log_info("complete: read");
-                if (cqe->res <= 0) {
-                    log_warn("Empty request! (connection closed)"); // connection closed
-                    // TODO also handle via
-                    add_close_request(req);
-                    //free(req->iov[0].iov_base);
-                    //free(req);
-                } else {
-                    handle_incoming(req, server_socket);
-                    //free(req->iov[0].iov_base);
-                    //free(req);
-                }
-                break;
-            case EVENT_TYPE_WRITE:
-                log_info("complete: write");
-                for (int i = 0; i < req->iovec_count; i++) {
-                    free(req->iov[i].iov_base);
-                }
-                //close(req->client_socket);
-                free(req);
-                break;
-            case EVENT_TYPE_CLOSE:
-                log_info("complete: close");
-                free(req);
-                break;
-            case EVENT_TYPE_TIMEOUT:
-                log_info("complete: timeout");
-                interval_end += 1000000;
-                add_timeout_request(req);
-                break;
-            default:
-                log_warn("Unexpected req type %d", req->event_type);
-                break;
+        if (submissions != 0) {
+            io_uring_submit(&ring);
         }
-        /* Mark this request as processed */
-        io_uring_cqe_seen(&ring, cqe);
     }
 }
 
@@ -280,10 +286,31 @@ int main() {
     log_init(Info, true, true);
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
 
+    uint64_t interval = 1000000;
+    timer_request.req.handler = on_timeout;
+    timer_request.interval_end = now() + interval;
+    timer_request.interval = interval;
+
+    accept_request.req.handler = on_accept;
+    accept_request.fd = server_socket;
+    accept_request.client_addr_len = sizeof(accept_request.client_addr);
+
+    read_request.req.handler = on_read_stdin;
+    read_request.fd = 1;
+    read_request.iov.iov_base = malloc(READ_SZ);
+    read_request.iov.iov_len = READ_SZ;
+
     signal(SIGINT, sigint_handler);
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
     log_info("listening on port %d", DEFAULT_SERVER_PORT);
-    server_loop(server_socket);
+
+    add_timeout_request(&timer_request); // will also submit
+    add_read_request(&read_request);
+    add_accept_request(&accept_request);
+    io_uring_submit(&ring);
+
+    server_loop();
 
     return 0;
 }
+
