@@ -226,12 +226,14 @@ static bool on_read_signals(void* arg, int res) {
 }
 
 static bool on_write(void* arg, int res) {
+    WriteRequest* req = arg;
     if (res <= 0) {
-        log_warn("read request failed: (%d) %s", res, strerror(-res));
-        // TODO close connection, notify rest of server, etc
+        log_info("write[%d] socket was closed (%s)", req->fd, strerror(-res));
+        // TODO just close
+        // hmm need ReadRequest
+        // add_close_request();
         exit(EXIT_FAILURE);
     }
-    WriteRequest* req = arg;
     //log_info("write[%d] done", req->fd);
     put_write(req);
     return false;
@@ -255,7 +257,7 @@ static bool on_timeout(void* arg, int len) {
 static bool on_read_socket(void* arg, int res) {
     ReadRequest* req = arg;
     if (res <= 0) {
-        log_info("socket %d was closed", req->fd);
+        log_info("read[%d] socket was closed (%s)", req->fd, strerror(-res));
         req->req.handler = on_close; // change handler
         add_close_request(req);
         //log_warn("read request failed: (%d) %s", res, strerror(-res));
