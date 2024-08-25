@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <sys/signalfd.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -66,7 +67,9 @@ struct io_uring ring;
 static TimeoutRequest timer_request;
 //static TimeoutRequest timer_request2;
 static AcceptRequest accept_request;
-static ReadRequest read_request; // for stdin
+static ReadRequest read_stdin;
+static ReadRequest read_signal;
+static bool stop;
 
 
 static bool on_write(void* arg, int res);
@@ -119,6 +122,23 @@ static int setup_listening_socket(int port) {
     return sock;
 }
 
+static int setup_signalfd(void) {
+    sigset_t mask;
+    //struct signalfd_siginfo fdsi;
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    sigaddset(&mask, SIGQUIT);
+
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
+        fatal_error("sigprocmask");
+    }
+
+    int sfd = signalfd(-1, &mask, 0);
+    if (sfd == -1) fatal_error("signalfd");
+    return sfd;
+}
+
 static void add_timeout_request(TimeoutRequest* req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     unsigned count = 0;
@@ -161,7 +181,7 @@ static void add_close_request(ReadRequest *req) {
 
 static bool on_read_stdin(void* arg, int res) {
     if (res <= 0) {
-        log_warn("accept request failed: %s", strerror(-res));
+        log_warn("read request failed: %s", strerror(-res));
         exit(EXIT_FAILURE);
     }
     int len = res;
@@ -175,10 +195,34 @@ static bool on_read_stdin(void* arg, int res) {
     return true;
 }
 
+static bool on_read_signals(void* arg, int res) {
+    if (res <= 0) {
+        log_warn("read request failed: %s", strerror(-res));
+        exit(EXIT_FAILURE);
+    }
+    ReadRequest* req = arg;
+    if (res != sizeof(struct signalfd_siginfo)) {
+        log_warn("invalid size");
+        exit(EXIT_FAILURE);
+    }
+    const struct signalfd_siginfo* fdsi = req->iov.iov_base;
+    if (fdsi->ssi_signo == SIGINT) {
+        log_info("Got SIGINT");
+    } else if (fdsi->ssi_signo == SIGQUIT) {
+        log_info("Got SIGQUIT");
+    } else {
+        log_warn("Read unexpected signal %d\n", fdsi->ssi_signo);
+    }
+
+    stop = true;
+    //add_read_request(req);
+    return false;
+}
+
 static bool on_write(void* arg, int res) {
     if (res <= 0) {
-        log_warn("write failed: %s", strerror(-res));
-        // TODO close connection, etc
+        log_warn("read request failed: (%d) %s", res, strerror(-res));
+        // TODO close connection, notify rest of server, etc
         exit(EXIT_FAILURE);
     }
     WriteRequest* req = arg;
@@ -205,11 +249,10 @@ static bool on_timeout(void* arg, int len) {
 static bool on_read_socket(void* arg, int res) {
     ReadRequest* req = arg;
     if (res <= 0) {
-        // TODO close socket
         log_info("socket %d was closed", req->fd);
         req->req.handler = on_close; // change handler
         add_close_request(req);
-        //log_warn("accept request failed: (%d) %s", res, strerror(-res));
+        //log_warn("read request failed: (%d) %s", res, strerror(-res));
         return true;
     }
 
@@ -251,12 +294,12 @@ static bool on_accept(void* arg, int res) {
 void server_loop(void) {
     struct io_uring_cqe *cqe;
 
-    while (1) {
+    while (!stop) {
         int ret = io_uring_wait_cqe(&ring, &cqe);
         if (ret < 0) fatal_error("io_uring_wait_cqe");
         int submissions = 0;
 
-        while (1) {
+        while (!stop) {
             // TODO use multiple loops with peek (see RedHat blog)
             Request *req = (Request*) cqe->user_data;
             assert(req);
@@ -278,15 +321,23 @@ void server_loop(void) {
     }
 }
 
+#if 0
 void sigint_handler(int signo) {
     log_info("^C pressed. Shutting down.");
     io_uring_queue_exit(&ring);
     exit(0);
 }
+#endif
 
 int main() {
     log_init(Info, true, true);
+
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
+    log_info("listening on port %d", DEFAULT_SERVER_PORT);
+
+    int sfd = setup_signalfd();
+
+    io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
 
     uint64_t interval = 1000000;
     timer_request.name = "T1";
@@ -306,22 +357,28 @@ int main() {
     accept_request.fd = server_socket;
     accept_request.client_addr_len = sizeof(accept_request.client_addr);
 
-    read_request.req.handler = on_read_stdin;
-    read_request.fd = 1;
-    read_request.iov.iov_base = malloc(READ_SZ);
-    read_request.iov.iov_len = READ_SZ;
+    read_signal.req.handler = on_read_signals;
+    read_signal.fd = sfd;
+    read_signal.iov.iov_base = malloc(READ_SZ);
+    read_signal.iov.iov_len = READ_SZ;
 
-    signal(SIGINT, sigint_handler);
-    io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
-    log_info("listening on port %d", DEFAULT_SERVER_PORT);
+    read_stdin.req.handler = on_read_stdin;
+    read_stdin.fd = 1;
+    read_stdin.iov.iov_base = malloc(READ_SZ);
+    read_stdin.iov.iov_len = READ_SZ;
 
     add_timeout_request(&timer_request);
     //add_timeout_request(&timer_request2);
-    add_read_request(&read_request);
+    add_read_request(&read_signal);
+    add_read_request(&read_stdin);
     add_accept_request(&accept_request);
     io_uring_submit(&ring);
 
     server_loop();
+
+    io_uring_queue_exit(&ring);
+
+    // TODO free iov's for non-writes
 
     return 0;
 }
