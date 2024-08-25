@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/signalfd.h>
+#include <arpa/inet.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -13,6 +14,11 @@
 #include <assert.h>
 
 #include "logger.h"
+
+/*
+ * TODO try failing write (set delay after read?, manually disconnect?)
+ * or have client send + disconnect?
+ */
 
 #define DEFAULT_SERVER_PORT     8000
 #define QUEUE_DEPTH             256
@@ -281,7 +287,7 @@ static bool on_accept(void* arg, int res) {
     }
     add_accept_request(req);
 
-    log_info("accept (res %d)", res);
+    log_info("accept (res %d) from %s", res, inet_ntoa(req->client_addr.sin_addr));
     ReadRequest* r2 = malloc(sizeof(ReadRequest));
     r2->req.handler = on_read_socket;
     r2->fd = res;
