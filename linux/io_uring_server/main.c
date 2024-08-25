@@ -15,11 +15,6 @@
 
 #include "logger.h"
 
-/*
- * TODO try failing write (set delay after read?, manually disconnect?)
- * or have client send + disconnect?
- */
-
 #define DEFAULT_SERVER_PORT     8000
 #define QUEUE_DEPTH             256
 #define READ_SZ                 4096
@@ -80,9 +75,8 @@ static AcceptRequest accept_request;
 static ReadRequest read_stdin;
 static ReadRequest read_signal;
 static bool stop;
-static int write_count;
 static int client_fd = -1;
-
+static uint64_t tx_count;
 
 static bool on_write(void* arg, int res);
 
@@ -189,7 +183,6 @@ static void add_write_request(WriteRequest *req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     io_uring_prep_writev(sqe, req->fd, &req->iov, 1, 0);
     io_uring_sqe_set_data(sqe, req);
-    write_count++;
 }
 
 static void add_close_request(ReadRequest *req) {
@@ -243,7 +236,6 @@ static bool on_read_signals(void* arg, int res) {
 
 static bool on_write(void* arg, int res) {
     // Note: when write fails, read will also fail, close on read (since we need a ReadRequest
-    write_count--;
     WriteRequest* req = arg;
     if (res <= 0) {
         log_info("write[%d] socket was closed (%s)", req->fd, strerror(-res));
@@ -261,9 +253,11 @@ static bool on_close(void* arg, int res) {
     return false;
 }
 
+static uint64_t last_count;
 static bool on_timeout(void* arg, int len) {
     TimeoutRequest* req = arg;
-    //log_info("tick timeout");
+    log_info("tick (rx/tx %ld/%ld) (+%ld)", tx_count, tx_count, tx_count - last_count);
+    last_count = tx_count;
     req->interval_end += req->interval;
     add_timeout_request(req);
     return true;
@@ -287,10 +281,8 @@ static bool on_timeout2(void* arg, int len) {
 
 static bool on_read_socket(void* arg, int res) {
     ReadRequest* req = arg;
-    // TODO < 0 ?
     if (res <= 0) {
         log_info("read[%d] socket was closed (%s)", req->fd, strerror(-res));
-        log_info("write count: %d", write_count);
         req->req.handler = on_close; // change handler
         add_close_request(req);
         client_fd = -1;
@@ -301,17 +293,22 @@ static bool on_read_socket(void* arg, int res) {
     char* input = req->iov.iov_base;
     int len = res;
     // TEMP strip CR/NL
-    if (len > 2 && input[len-2] == '\r') input[len-2] = 0;
-    printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
+    if (len > 2 && input[len-2] == '\r') {
+        input[len-2] = 0;
+        len -= 2;
+    }
+    //printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
 
     add_read_request(req);
-#if 0
+#if 1
+    // echo back
     WriteRequest* wr = get_write();
     wr->fd = req->fd;
     char* output = wr->iov.iov_base;
-    wr->iov.iov_len = sprintf(output, "ECHO %s\n", input);
+    memcpy(output, input, len);
+    wr->iov.iov_len = len;
 
-    // TODO change handler? (to close socket, cancel read, etc)
+    tx_count++;
     add_write_request(wr);
 #endif
     return true;
@@ -419,7 +416,7 @@ int main() {
     read_stdin.iov.iov_len = READ_SZ;
 
     add_timeout_request(&timer_request);
-    add_timeout_request(&timer_request2);
+    //add_timeout_request(&timer_request2);
     add_read_request(&read_signal);
     add_read_request(&read_stdin);
     add_accept_request(&accept_request);
