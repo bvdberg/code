@@ -36,6 +36,7 @@ typedef struct {
 
 typedef struct {
     Request req;    // must be first
+    const char* name; // no ownership
     struct __kernel_timespec ts;
     uint64_t interval_end;
     uint64_t interval;
@@ -63,6 +64,7 @@ typedef struct {
 struct io_uring ring;
 
 static TimeoutRequest timer_request;
+//static TimeoutRequest timer_request2;
 static AcceptRequest accept_request;
 static ReadRequest read_request; // for stdin
 
@@ -194,7 +196,7 @@ static bool on_close(void* arg, int res) {
 
 static bool on_timeout(void* arg, int len) {
     TimeoutRequest* req = arg;
-    log_info("timeout");
+    log_info("timeout %s", req->name);
     req->interval_end += req->interval;
     add_timeout_request(req);
     return true;
@@ -264,7 +266,7 @@ void server_loop(void) {
             if (io_uring_sq_space_left(&ring) < MAX_SQE_PER_LOOP) break;
 
             ret = io_uring_peek_cqe(&ring, &cqe);
-            if (ret <= 0) {
+            if (ret < 0) {
                 if (ret == -EAGAIN) break;     // no remaining work in completion queue
                 log_error("peek failed: (%d) %s", ret, strerror(-ret));
                 exit(EXIT_FAILURE);
@@ -287,9 +289,18 @@ int main() {
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
 
     uint64_t interval = 1000000;
+    timer_request.name = "T1";
     timer_request.req.handler = on_timeout;
     timer_request.interval_end = now() + interval;
     timer_request.interval = interval;
+
+#if 0
+    interval = 250000;
+    timer_request2.name = "T2";
+    timer_request2.req.handler = on_timeout;
+    timer_request2.interval_end = now() + interval;
+    timer_request2.interval = interval;
+#endif
 
     accept_request.req.handler = on_accept;
     accept_request.fd = server_socket;
@@ -304,7 +315,8 @@ int main() {
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
     log_info("listening on port %d", DEFAULT_SERVER_PORT);
 
-    add_timeout_request(&timer_request); // will also submit
+    add_timeout_request(&timer_request);
+    //add_timeout_request(&timer_request2);
     add_read_request(&read_request);
     add_accept_request(&accept_request);
     io_uring_submit(&ring);
