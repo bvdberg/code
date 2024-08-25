@@ -68,14 +68,20 @@ typedef struct {
     socklen_t client_addr_len;
 } AcceptRequest;
 
+typedef struct {
+    ReadRequest read_request;
+} Connection;
+
 struct io_uring ring;
 
 static TimeoutRequest timer_request;
-//static TimeoutRequest timer_request2;
+static TimeoutRequest timer_request2;
 static AcceptRequest accept_request;
 static ReadRequest read_stdin;
 static ReadRequest read_signal;
 static bool stop;
+static int write_count;
+static int client_fd = -1;
 
 
 static bool on_write(void* arg, int res);
@@ -135,6 +141,7 @@ static int setup_signalfd(void) {
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
     sigaddset(&mask, SIGQUIT);
+    sigaddset(&mask, SIGPIPE);
 
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
         fatal_error("sigprocmask");
@@ -151,11 +158,17 @@ static void add_timeout_request(TimeoutRequest* req) {
     unsigned flags = 0;
     uint64_t current_time = now();
 
+    // TEMP
+#if 1
     assert(req->interval_end > current_time);
     uint64_t delay = req->interval_end - current_time;
     //log_info("delay %ld", delay);
     req->ts.tv_sec = 0;
     req->ts.tv_nsec = delay * 1000;
+#else
+    req->ts.tv_sec = 0;
+    req->ts.tv_nsec = 1000;
+#endif
     io_uring_prep_timeout(sqe, &req->ts, count, flags);
     io_uring_sqe_set_data(sqe, req);
 }
@@ -176,6 +189,7 @@ static void add_write_request(WriteRequest *req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
     io_uring_prep_writev(sqe, req->fd, &req->iov, 1, 0);
     io_uring_sqe_set_data(sqe, req);
+    write_count++;
 }
 
 static void add_close_request(ReadRequest *req) {
@@ -216,6 +230,8 @@ static bool on_read_signals(void* arg, int res) {
         log_info("Got SIGINT");
     } else if (fdsi->ssi_signo == SIGQUIT) {
         log_info("Got SIGQUIT");
+    } else if (fdsi->ssi_signo == SIGPIPE) {
+        log_info("Got SIGPIPE");
     } else {
         log_warn("Read unexpected signal %d\n", fdsi->ssi_signo);
     }
@@ -226,15 +242,14 @@ static bool on_read_signals(void* arg, int res) {
 }
 
 static bool on_write(void* arg, int res) {
+    // Note: when write fails, read will also fail, close on read (since we need a ReadRequest
+    write_count--;
     WriteRequest* req = arg;
     if (res <= 0) {
         log_info("write[%d] socket was closed (%s)", req->fd, strerror(-res));
-        // TODO just close
-        // hmm need ReadRequest
-        // add_close_request();
-        exit(EXIT_FAILURE);
+        client_fd = -1;
+        // wait for read to fail
     }
-    //log_info("write[%d] done", req->fd);
     put_write(req);
     return false;
 }
@@ -248,18 +263,37 @@ static bool on_close(void* arg, int res) {
 
 static bool on_timeout(void* arg, int len) {
     TimeoutRequest* req = arg;
-    log_info("timeout %s", req->name);
+    //log_info("tick timeout");
     req->interval_end += req->interval;
     add_timeout_request(req);
     return true;
 }
 
+static bool on_timeout2(void* arg, int len) {
+    TimeoutRequest* req = arg;
+    req->interval_end += req->interval;
+    add_timeout_request(req);
+
+    if (client_fd != -1) {
+        //log_info("send");
+        WriteRequest* wr = get_write();
+        wr->fd = client_fd;
+        char* output = wr->iov.iov_base;
+        wr->iov.iov_len = 4096;
+        add_write_request(wr);
+    }
+    return true;
+}
+
 static bool on_read_socket(void* arg, int res) {
     ReadRequest* req = arg;
+    // TODO < 0 ?
     if (res <= 0) {
         log_info("read[%d] socket was closed (%s)", req->fd, strerror(-res));
+        log_info("write count: %d", write_count);
         req->req.handler = on_close; // change handler
         add_close_request(req);
+        client_fd = -1;
         //log_warn("read request failed: (%d) %s", res, strerror(-res));
         return true;
     }
@@ -271,6 +305,7 @@ static bool on_read_socket(void* arg, int res) {
     printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
 
     add_read_request(req);
+#if 0
     WriteRequest* wr = get_write();
     wr->fd = req->fd;
     char* output = wr->iov.iov_base;
@@ -278,7 +313,19 @@ static bool on_read_socket(void* arg, int res) {
 
     // TODO change handler? (to close socket, cancel read, etc)
     add_write_request(wr);
+#endif
     return true;
+}
+
+static void createConnection(int fd) {
+    Connection* conn = malloc(sizeof(Connection));
+    ReadRequest* r2 = &conn->read_request;
+    r2->req.handler = on_read_socket;
+    r2->fd = fd;
+    r2->iov.iov_base = malloc(READ_SZ);
+    r2->iov.iov_len = READ_SZ;
+    add_read_request(r2);
+    // TODO add to some list
 }
 
 static bool on_accept(void* arg, int res) {
@@ -290,12 +337,10 @@ static bool on_accept(void* arg, int res) {
     add_accept_request(req);
 
     log_info("accept (res %d) from %s", res, inet_ntoa(req->client_addr.sin_addr));
-    ReadRequest* r2 = malloc(sizeof(ReadRequest));
-    r2->req.handler = on_read_socket;
-    r2->fd = res;
-    r2->iov.iov_base = malloc(READ_SZ);
-    r2->iov.iov_len = READ_SZ;
-    add_read_request(r2);
+
+    createConnection(res);
+
+    client_fd = res;
     return true;
 }
 
@@ -348,15 +393,13 @@ int main() {
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
 
     uint64_t interval = 1000000;
-    timer_request.name = "T1";
     timer_request.req.handler = on_timeout;
     timer_request.interval_end = now() + interval;
     timer_request.interval = interval;
 
-#if 0
-    interval = 250000;
-    timer_request2.name = "T2";
-    timer_request2.req.handler = on_timeout;
+#if 1
+    interval = 2000;
+    timer_request2.req.handler = on_timeout2;
     timer_request2.interval_end = now() + interval;
     timer_request2.interval = interval;
 #endif
@@ -376,7 +419,7 @@ int main() {
     read_stdin.iov.iov_len = READ_SZ;
 
     add_timeout_request(&timer_request);
-    //add_timeout_request(&timer_request2);
+    add_timeout_request(&timer_request2);
     add_read_request(&read_signal);
     add_read_request(&read_stdin);
     add_accept_request(&accept_request);
@@ -386,6 +429,7 @@ int main() {
 
     io_uring_queue_exit(&ring);
 
+    log_info("done");
     // TODO free iov's for non-writes
 
     return 0;
