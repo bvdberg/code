@@ -48,12 +48,14 @@ typedef struct {
 typedef struct {
     Request req;    // must be first
     int fd;
+    int buf_nr; // fixed buffers
     struct iovec iov;
 } ReadRequest;
 
 typedef struct {
     Request req;    // must be first
     int fd;
+    int buf_nr; // fixed buffers
     struct iovec iov;
 } WriteRequest;
 
@@ -93,13 +95,63 @@ static int wr_count;
 static int wr_capacity;
 static WriteRequest* wr_pool[WR_POOL_SIZE];
 
+/*
+    Fixed buffers:
+    - allocate 1 per WriteRequest
+    - allocate 1 per Socket ReadRequest (max 10 for now), dont get freed for now)
+*/
+
+typedef struct {
+    struct iovec iov;
+    int nr;
+} FixedBuffer;
+
+#define FIXED_BUFFER_COUNT 64
+static FixedBuffer fixed_buffers[FIXED_BUFFER_COUNT];
+static unsigned num_fixed_buffers;
+
+static void fixed_buffers_init() {
+    struct iovec iovs[FIXED_BUFFER_COUNT];
+    // TODO or register 1 big area and divide outselves (using offset) (easier mmap for kernel)
+    for (int i = 0; i < FIXED_BUFFER_COUNT; i++) {
+        iovs[i].iov_base = malloc(WRITE_SZ);    // TODO assumes READ_SIZE == WRITE_SZ
+        iovs[i].iov_len = WRITE_SZ;
+        assert(iovs[i].iov_base);
+        memset(iovs[i].iov_base, 0, WRITE_SZ);
+        fixed_buffers[i].iov = iovs[i];
+        fixed_buffers[i].nr = i;
+    }
+    num_fixed_buffers = FIXED_BUFFER_COUNT;
+
+    int ret = io_uring_register_buffers(&ring, iovs, FIXED_BUFFER_COUNT);
+    if (ret) {
+        fprintf(stderr, "Error registering buffers: %s", strerror(-ret));
+        exit(EXIT_FAILURE);
+    }
+    log_info("registered %d buffers", FIXED_BUFFER_COUNT);
+}
+
+static FixedBuffer* get_fixed_buffer(void) {
+    assert(num_fixed_buffers);
+    num_fixed_buffers--;
+    return &fixed_buffers[num_fixed_buffers+1];
+}
+
+static void put_fixed_buffer(unsigned nr, struct iovec iov) {
+    assert(num_fixed_buffers != FIXED_BUFFER_COUNT);
+    fixed_buffers[num_fixed_buffers].nr = nr;
+    fixed_buffers[num_fixed_buffers].iov = iov;
+    num_fixed_buffers++;
+}
+
 static void wr_pool_init(void) {
     wr_count = WR_POOL_SIZE;
     wr_capacity = WR_POOL_SIZE;
     for (int i = 0; i < WR_POOL_SIZE; i++) {
         WriteRequest* req = malloc(sizeof(WriteRequest));
-        req->iov.iov_base = malloc(WRITE_SZ);
-        req->iov.iov_len = WRITE_SZ;
+        FixedBuffer* fb = get_fixed_buffer();
+        req->iov = fb->iov;
+        req->buf_nr = fb->nr;
         req->req.handler = on_write;
         wr_pool[i] = req;
     }
@@ -209,9 +261,18 @@ static void add_read_request(ReadRequest* req) {
     io_uring_sqe_set_data(sqe, req);
 }
 
+static void add_read_request_fixed(ReadRequest* req) {
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    //io_uring_prep_readv(sqe, req->fd, &req->iov, 1, 0);
+    //printf("READ fd %d  buf %d  %p\n", req->fd, req->buf_nr, req->iov.iov_base);
+    io_uring_prep_read_fixed(sqe, req->fd, req->iov.iov_base, req->iov.iov_len, 0, req->buf_nr);
+    io_uring_sqe_set_data(sqe, req);
+}
+
 static void add_write_request(WriteRequest *req) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    io_uring_prep_writev(sqe, req->fd, &req->iov, 1, 0);
+    //io_uring_prep_writev(sqe, req->fd, &req->iov, 1, 0);
+    io_uring_prep_write_fixed(sqe, req->fd, req->iov.iov_base, req->iov.iov_len, 0, req->buf_nr);
     io_uring_sqe_set_data(sqe, req);
 }
 
@@ -330,7 +391,7 @@ static bool on_read_socket(void* arg, int res) {
 #endif
     //printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
 
-    add_read_request(req);
+    add_read_request_fixed(req);
 #if 1
     // echo back
     WriteRequest* wr = get_write();
@@ -349,12 +410,13 @@ static bool on_read_socket(void* arg, int res) {
 
 static Connection* createConnection(int fd) {
     Connection* conn = malloc(sizeof(Connection));
-    ReadRequest* r2 = &conn->read_request;
-    r2->req.handler = on_read_socket;
-    r2->fd = fd;
-    r2->iov.iov_base = malloc(READ_SZ);
-    r2->iov.iov_len = READ_SZ;
-    add_read_request(r2);
+    ReadRequest* rr = &conn->read_request;
+    FixedBuffer* fb = get_fixed_buffer();
+    rr->iov = fb->iov;
+    rr->buf_nr = fb->nr;
+    rr->req.handler = on_read_socket;
+    rr->fd = fd;
+    add_read_request_fixed(rr);
     return conn;
 }
 
@@ -400,7 +462,6 @@ void server_loop(void) {
         if (ret < 0) fatal_error("io_uring_wait_cqe");
         int submissions = 0;
 
-        // TODO try io_uring_prep_read_fixed + io_uring_register_buffers (Fixed buffers)
         // TODO try io_uring_for_each_cqe() + io_uring_cq_advance(ring, num)
         // TODO try kernel worker thread (need newer kernel?)
 
@@ -465,7 +526,6 @@ int main() {
     log_init(Info, true, true);
 
     list_init(&conns);
-    wr_pool_init();
 
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
     log_info("listening on port %d", DEFAULT_SERVER_PORT);
@@ -473,6 +533,8 @@ int main() {
     int sfd = setup_signalfd();
 
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
+    fixed_buffers_init();
+    wr_pool_init();
     //set_cpu_affinity();
     //set_iowq_affinity(&ring);
 
