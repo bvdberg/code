@@ -5,10 +5,10 @@ CFLAGS+=-g -O2
 SOURCES=logger.c linked_list.c main.c
 HEADERS=logger.h linked_list.h
 
-test: $(SOURCES) $(HEADERS)
-	gcc $(CFLAGS) $(SOURCES) -luring -o test
+server: $(SOURCES) $(HEADERS)
+	gcc $(CFLAGS) $(SOURCES) -luring -o server
 
 clean:
-	rm -f *.o test
+	rm -f *.o server
 
 
