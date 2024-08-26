@@ -321,11 +321,13 @@ static bool on_read_socket(void* arg, int res) {
 
     char* input = req->iov.iov_base;
     int len = res;
+#if 0
     // TEMP strip CR/NL
     if (len > 2 && input[len-2] == '\r') {
         input[len-2] = 0;
         len -= 2;
     }
+#endif
     //printf("READ SOCKET[%d] %d/%ld [%s]\n", req->fd, len, req->iov.iov_len, input);
 
     add_read_request(req);
@@ -398,6 +400,10 @@ void server_loop(void) {
         if (ret < 0) fatal_error("io_uring_wait_cqe");
         int submissions = 0;
 
+        // TODO try io_uring_prep_read_fixed + io_uring_register_buffers (Fixed buffers)
+        // TODO try io_uring_for_each_cqe() + io_uring_cq_advance(ring, num)
+        // TODO try kernel worker thread (need newer kernel?)
+
         while (!stop) {
             Request *req = (Request*) cqe->user_data;
             assert(req);
@@ -427,6 +433,34 @@ void sigint_handler(int signo) {
 }
 #endif
 
+static int cfg_cpu = 3;
+static void set_cpu_affinity(void) {
+    cpu_set_t mask;
+
+    if (cfg_cpu == -1)
+        return;
+
+    CPU_ZERO(&mask);
+    CPU_SET(cfg_cpu, &mask);
+    if (sched_setaffinity(0, sizeof(mask), &mask))
+        fatal_error("unable to pin cpu");
+}
+
+static void set_iowq_affinity(struct io_uring *r) {
+    cpu_set_t mask;
+    int ret;
+
+    if (cfg_cpu == -1)
+        return;
+
+    CPU_ZERO(&mask);
+    CPU_SET(cfg_cpu, &mask);
+    ret = io_uring_register_iowq_aff(r, 1, &mask);
+    if (ret)
+        fatal_error("unabled to set io-wq affinity");
+}
+
+
 int main() {
     log_init(Info, true, true);
 
@@ -439,6 +473,8 @@ int main() {
     int sfd = setup_signalfd();
 
     io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
+    //set_cpu_affinity();
+    //set_iowq_affinity(&ring);
 
     uint64_t interval = 1000000;
     timer_request.req.handler = on_timeout;
@@ -477,8 +513,6 @@ int main() {
 
     server_loop();
 
-    io_uring_queue_exit(&ring);
-
     log_info("done");
 
     wr_pool_free();
@@ -490,6 +524,9 @@ int main() {
         cur = cur->next;
         list_remove(&c->list);
     }
+
+    // TODO use wait_cqe_fast(&ring); to wait for all events
+    io_uring_queue_exit(&ring);
 
     return 0;
 }
