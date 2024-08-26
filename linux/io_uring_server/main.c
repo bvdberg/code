@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "logger.h"
+#include "linked_list.h"
 
 #define DEFAULT_SERVER_PORT     8000
 #define QUEUE_DEPTH             256
@@ -64,7 +65,9 @@ typedef struct {
 } AcceptRequest;
 
 typedef struct {
-    ReadRequest read_request;
+    ReadRequest read_request; // must be first member (we dont use to_container yet)
+    struct list_tag list;
+    uint64_t count;
 } Connection;
 
 struct io_uring ring;
@@ -77,21 +80,48 @@ static ReadRequest read_signal;
 static bool stop;
 static int client_fd = -1;
 static uint64_t tx_count;
+static uint64_t last_count;
+static struct list_tag conns;
 
 static bool on_write(void* arg, int res);
+static void removeConnection(Connection* c);
+static void dumpConnections(void);
 
-// TODO use pool for get_write/put_write
+// Pool
+#define WR_POOL_SIZE 32
+static int wr_count;
+static int wr_capacity;
+static WriteRequest* wr_pool[WR_POOL_SIZE];
+
+static void wr_pool_init(void) {
+    wr_count = WR_POOL_SIZE;
+    wr_capacity = WR_POOL_SIZE;
+    for (int i = 0; i < WR_POOL_SIZE; i++) {
+        WriteRequest* req = malloc(sizeof(WriteRequest));
+        req->iov.iov_base = malloc(WRITE_SZ);
+        req->iov.iov_len = WRITE_SZ;
+        req->req.handler = on_write;
+        wr_pool[i] = req;
+    }
+}
+
+static void wr_pool_free(void) {
+    for (int i = 0; i < WR_POOL_SIZE; i++) {
+        free(wr_pool[i]->iov.iov_base);
+        free(wr_pool[i]);
+    }
+}
+
 static WriteRequest* get_write(void) {
-    WriteRequest* req = malloc(sizeof(WriteRequest));
-    req->iov.iov_base = malloc(WRITE_SZ);
-    req->iov.iov_len = WRITE_SZ;
-    req->req.handler = on_write;
-    return req;
+    assert(wr_count);
+    wr_count--;
+    return wr_pool[wr_count];
 }
 
 static void put_write(WriteRequest* req) {
-    free(req->iov.iov_base);
-    free(req);
+    assert(wr_count != wr_capacity);
+    wr_pool[wr_count] = req;
+    wr_count++;
 }
 
 void fatal_error(const char *syscall) {
@@ -191,7 +221,6 @@ static void add_close_request(ReadRequest *req) {
     io_uring_sqe_set_data(sqe, req);
 }
 
-
 static bool on_read_stdin(void* arg, int res) {
     if (res <= 0) {
         log_warn("read request failed: %s", strerror(-res));
@@ -203,7 +232,8 @@ static bool on_read_stdin(void* arg, int res) {
     char* cp = req->iov.iov_base;
     // TEMP strip NL
     if (len > 1 && cp[len-1] == '\n') cp[len-1] = 0;
-    printf("READ STDIN %d/%ld [%s]\n", len, req->iov.iov_len, cp);
+    //printf("READ STDIN %d/%ld [%s]\n", len, req->iov.iov_len, cp);
+    dumpConnections();
     add_read_request(req);
     return true;
 }
@@ -249,11 +279,10 @@ static bool on_write(void* arg, int res) {
 static bool on_close(void* arg, int res) {
     ReadRequest* req = arg;
     log_info("closed[%d] %d", req->fd, res);
-    free(req);
+    removeConnection((Connection*)req);
     return false;
 }
 
-static uint64_t last_count;
 static bool on_timeout(void* arg, int len) {
     TimeoutRequest* req = arg;
     log_info("tick (rx/tx %ld/%ld) (+%ld)", tx_count, tx_count, tx_count - last_count);
@@ -308,13 +337,15 @@ static bool on_read_socket(void* arg, int res) {
     memcpy(output, input, len);
     wr->iov.iov_len = len;
 
+    Connection* c = arg;
+    c->count++;
     tx_count++;
     add_write_request(wr);
 #endif
     return true;
 }
 
-static void createConnection(int fd) {
+static Connection* createConnection(int fd) {
     Connection* conn = malloc(sizeof(Connection));
     ReadRequest* r2 = &conn->read_request;
     r2->req.handler = on_read_socket;
@@ -322,7 +353,24 @@ static void createConnection(int fd) {
     r2->iov.iov_base = malloc(READ_SZ);
     r2->iov.iov_len = READ_SZ;
     add_read_request(r2);
-    // TODO add to some list
+    return conn;
+}
+
+static void removeConnection(Connection* c) {
+    list_remove(&c->list);
+    free(c->read_request.iov.iov_base);
+    free(c);
+}
+
+static void dumpConnections(void) {
+    list_t cur = conns.next;
+    uint32_t idx = 0;
+    while (cur != &conns) {
+        Connection* c = to_container(cur, Connection, list);
+        printf("[%2d] %2d  %ld\n", idx, c->read_request.fd, c->count);
+        idx++;
+        cur = cur->next;
+    }
 }
 
 static bool on_accept(void* arg, int res) {
@@ -335,7 +383,8 @@ static bool on_accept(void* arg, int res) {
 
     log_info("accept (res %d) from %s", res, inet_ntoa(req->client_addr.sin_addr));
 
-    createConnection(res);
+    Connection* c = createConnection(res);
+    list_add_tail(&conns, &c->list);
 
     client_fd = res;
     return true;
@@ -350,7 +399,6 @@ void server_loop(void) {
         int submissions = 0;
 
         while (!stop) {
-            // TODO use multiple loops with peek (see RedHat blog)
             Request *req = (Request*) cqe->user_data;
             assert(req);
             submissions += req->handler(req, cqe->res);
@@ -381,6 +429,9 @@ void sigint_handler(int signo) {
 
 int main() {
     log_init(Info, true, true);
+
+    list_init(&conns);
+    wr_pool_init();
 
     int server_socket = setup_listening_socket(DEFAULT_SERVER_PORT);
     log_info("listening on port %d", DEFAULT_SERVER_PORT);
@@ -422,12 +473,23 @@ int main() {
     add_accept_request(&accept_request);
     io_uring_submit(&ring);
 
+    log_info("press ENTER to show connections");
+
     server_loop();
 
     io_uring_queue_exit(&ring);
 
     log_info("done");
-    // TODO free iov's for non-writes
+
+    wr_pool_free();
+    // TODO free mallocs above
+
+    list_t cur = conns.next;
+    while (cur != &conns) {
+        Connection* c = to_container(cur, Connection, list);
+        cur = cur->next;
+        list_remove(&c->list);
+    }
 
     return 0;
 }

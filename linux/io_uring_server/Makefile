@@ -2,8 +2,8 @@ CFLAGS=-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wshadow -std=c99 -D_GNU_
 CFLAGS+=-g -O2
 #CFLAGS+=-g -O0
 
-SOURCES=logger.c main.c
-HEADERS=logger.h
+SOURCES=logger.c linked_list.c main.c
+HEADERS=logger.h linked_list.h
 
 test: $(SOURCES) $(HEADERS)
 	gcc $(CFLAGS) $(SOURCES) -luring -o test

@@ -9,4 +9,4 @@ mate-terminal --geometry 86x14+800+650 --command "./client" --title "Client8"
 mate-terminal --geometry 86x14+1550+650 --command "./client" --title "Client9"
 mate-terminal --geometry 86x14+50+950 --command "./client" --title "Client10"
 
-./test
+#./test
