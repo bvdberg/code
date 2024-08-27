@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <netinet/tcp.h>
 #include <signal.h>
 #include <liburing.h>
 #include <sys/stat.h>
@@ -80,7 +81,6 @@ static AcceptRequest accept_request;
 static ReadRequest read_stdin;
 static ReadRequest read_signal;
 static bool stop;
-static int client_fd = -1;
 static uint64_t tx_count;
 static uint64_t last_count;
 static struct list_tag conns;
@@ -330,7 +330,6 @@ static bool on_write(void* arg, int res) {
     WriteRequest* req = arg;
     if (res <= 0) {
         log_info("write[%d] socket was closed (%s)", req->fd, strerror(-res));
-        client_fd = -1;
         // wait for read to fail
     }
     put_write(req);
@@ -357,7 +356,7 @@ static bool on_timeout2(void* arg, int len) {
     TimeoutRequest* req = arg;
     req->interval_end += req->interval;
     add_timeout_request(req);
-
+#if 0
     if (client_fd != -1) {
         //log_info("send");
         WriteRequest* wr = get_write();
@@ -366,6 +365,7 @@ static bool on_timeout2(void* arg, int len) {
         wr->iov.iov_len = 4096;
         add_write_request(wr);
     }
+#endif
     return true;
 }
 
@@ -375,7 +375,6 @@ static bool on_read_socket(void* arg, int res) {
         log_info("read[%d] socket was closed (%s)", req->fd, strerror(-res));
         req->req.handler = on_close; // change handler
         add_close_request(req);
-        client_fd = -1;
         //log_warn("read request failed: (%d) %s", res, strerror(-res));
         return true;
     }
@@ -444,13 +443,20 @@ static bool on_accept(void* arg, int res) {
         exit(EXIT_FAILURE);
     }
     add_accept_request(req);
+    int fd = res;
 
     log_info("accept (res %d) from %s", res, inet_ntoa(req->client_addr.sin_addr));
 
-    Connection* c = createConnection(res);
-    list_add_tail(&conns, &c->list);
+        // enable TCP_NODELAY to avoid delays due to small fragments being merged
+    int value = 1;
+    res = setsockopt(fd, SOL_TCP, TCP_NODELAY, &value, sizeof(int));
+    if (res != 0) {
+        fprintf(stderr, "Error setting TCP_NODELAY: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
-    client_fd = res;
+    Connection* c = createConnection(fd);
+    list_add_tail(&conns, &c->list);
     return true;
 }
 
