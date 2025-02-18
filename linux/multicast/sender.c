@@ -61,9 +61,14 @@ int main(int argc, char* argv[])
 
     printf("sending to %s, port %d\n", MULTICAST_IP, MULTICAST_PORT);
 
-    char* message="Hello Multicast World!";
+    uint32_t nr = 0;
     while (1) {
-        if (send(fd, message, strlen(message), 0) < 0) {
+        char* message="Hello Multicast World!";
+        char tmp[64];
+        sprintf(tmp, "%s %d", message, nr);
+        nr++;
+
+        if (send(fd, tmp, strlen(tmp), 0) < 0) {
             perror("sendto");
             exit(1);
         }
