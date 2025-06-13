@@ -44,13 +44,22 @@ const char* color2str[] = {"BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA",
 
 void textcolor(int attr, int fg, int bg)
 {
-    char command[13];
+    char command[20];
     sprintf(command, "%c[%d;%d;%dm", 0x1B, attr, fg + 30, bg + 40);
     printf("%s", command);
-    
+
     printf("esc[%d;%d;%dm", attr, fg + 30, bg + 40);
 }
 
+void textcolor_rgb(unsigned char r, unsigned char g, unsigned char b) {
+    char command[24];
+    sprintf(command, "\033[38;2;%u;%u;%um", r, g, b);
+    printf("%s", command);
+    printf( "esc[38;2;%u;%u;%um  ", r, g, b);
+
+    //printf '\e[38;2;240;100;200m\e[48;2;200;255;50mHello World!\e[0m\n'
+    //#          fg   RRR GGG BBB    bg   RRR GGG BB             reset
+}
 
 int main() {
     for (int i=0; i<8; i++) {
@@ -94,6 +103,13 @@ int main() {
         printf("TEXT COLOR (HIDDEN, %s, %s)\n", color2str[i], color2str[0]);
         textcolor(RESET, WHITE, BLACK);
     }
+    printf("\n");
+
+    textcolor_rgb(252, 186, 3);
+    printf("RGB COLORS!\n");
+    textcolor_rgb(194, 47, 96);
+    printf("RGB COLORS!\n");
+    textcolor(RESET, WHITE, BLACK);
     printf("\n");
     return 0;
 }
